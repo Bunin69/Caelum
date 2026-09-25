@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="manifest.json">
+<title id="appTitle">Caelum · Ваш финансовый ассистент · v56</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f6f7f9;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.app{max-width:520px;margin:auto;padding:calc(16px + env(safe-area-inset-top)) 14px calc(90px + env(safe-area-inset-bottom));overflow-x:hidden}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+h1{font-size:22px;margin:0}.muted{color:#697386;font-size:13px}.card{background:#fff;border-radius:16px;padding:15px;margin:9px 0;box-shadow:0 1px 8px #00000006}
+.balance{font-size:34px;font-weight:800;margin:5px 0}.row{display:flex;justify-content:space-between;gap:10px;align-items:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.smallcard{background:#f8fafc;border-radius:14px;padding:12px}.label{font-size:12px;color:#697386}.value{font-size:20px;font-weight:700;margin-top:3px}
+.progress{height:10px;background:#e6eaf0;border-radius:99px;overflow:hidden;margin:10px 0}.bar{height:100%;background:#111827;border-radius:99px;width:0}
+button{border:0;border-radius:11px;padding:10px 12px;font-weight:650;background:#111827;color:white;cursor:pointer}button.secondary{background:#eef1f5;color:#172033}
+input{width:100%;padding:11px;border:1px solid #d9dee7;border-radius:11px;margin:5px 0 9px;font-size:16px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e7eaf0;padding:8px max(10px,calc((100vw - 520px)/2));display:flex;justify-content:space-around}
+nav button{background:transparent;color:#697386;padding:7px 8px;font-size:12px}nav button.active{color:#111827;font-weight:800}
+.section{display:none}.section.active{display:block}.debt{padding:11px;border:1px solid #e8ebf0;border-radius:14px;margin:8px 0}
+hr{border:0;border-top:1px solid #edf0f4;margin:12px 0}
+.history-wrap{margin-top:10px}.date-group{margin-top:14px}.date-group:first-child{margin-top:4px}.date-title{font-size:12px;font-weight:750;color:#697386;text-transform:none;margin:0 2px 4px}.history-item{padding:9px 2px;border-bottom:1px solid #f0f2f5}.history-item:last-child{border-bottom:0}.history-note{min-width:0;line-height:1.3}.history-date{font-size:11px;color:#8a93a3;margin-top:2px}.history-item .positive{color:#16734b}.history-item .negative{color:#b42318}
+
+/* v50: strict mobile layout reset — prevent horizontal drift */
+html,body{width:100%;max-width:100%;margin:0;padding-left:0;padding-right:0;overflow-x:hidden}
+*,*::before,*::after{box-sizing:border-box;max-width:100%}
+.app{width:100%;max-width:520px;margin:0 auto;padding-left:12px;padding-right:12px;overflow-x:hidden}
+.top{width:100%;max-width:100%;min-width:0}
+.brand-head{min-width:0;flex:1 1 auto}.top-tools{flex:0 0 auto;display:flex;gap:8px}
+.top-tools button{flex:0 0 auto}
+.caelum-home{width:100%;max-width:100%;overflow:hidden}
+.caelum-balance-card,.caelum-finance-grid,.caelum-goal-card,.caelum-home-card{width:100%;max-width:100%;min-width:0}
+.caelum-balance-head{min-width:0}.caelum-balance-head>div:first-child{min-width:0;flex:1 1 auto}.caelum-balance-total{max-width:100%;font-size:clamp(34px,10.2vw,43px);overflow:hidden;text-overflow:ellipsis}
+.caelum-balance-action{flex:0 0 78px;width:78px;min-width:78px}
+.caelum-account-grid{width:100%;min-width:0}.caelum-account{width:100%;min-width:0}.caelum-account>span:nth-child(2){min-width:0}.caelum-account b{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.caelum-finance-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.caelum-metric{width:100%;min-width:0;overflow:hidden;padding-left:7px;padding-right:7px}
+.caelum-metric-top{width:100%;min-width:0}.caelum-metric-value{width:100%;min-width:0;font-size:clamp(10px,2.9vw,13px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.caelum-metric-label,.caelum-metric-sub{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.caelum-goal-main{min-width:0}.caelum-goal-title{min-width:0;max-width:70%;font-size:clamp(24px,7vw,29px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.caelum-goal-percent{flex:0 0 auto}
+.caelum-goal-bottom{min-width:0}.caelum-goal-bottom span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.caelum-actions-grid{width:100%;grid-template-columns:repeat(4,minmax(0,1fr));min-width:0}.caelum-actions-grid button{min-width:0;width:100%;overflow:hidden}
+.bottom-nav{width:100%;left:0;right:0;min-width:0;padding-left:10px;padding-right:10px}
+.bottom-nav button{min-width:0}
+@media(max-width:430px){
+ .app{padding-left:10px;padding-right:10px}
+ .top{padding-left:14px;padding-right:14px}
+ .brand-head h1{font-size:27px}
+ .brand-sub{font-size:12px}
+ .caelum-balance-card{padding-left:13px;padding-right:13px}
+ .caelum-balance-total{font-size:clamp(34px,10.5vw,40px)}
+ .caelum-balance-action{flex-basis:72px;width:72px;min-width:72px;height:62px}
+ .caelum-account-grid{gap:8px}
+ .caelum-account{grid-template-columns:34px minmax(0,1fr) 8px;gap:6px;padding:10px 8px}
+ .caelum-account b{font-size:16px}
+ .caelum-account small{font-size:10px}
+ .caelum-finance-grid{gap:6px}
+ .caelum-metric{min-height:136px;padding:10px 6px}
+ .caelum-metric-icon{width:33px;height:33px}
+ .caelum-metric-label{font-size:10px}
+ .caelum-metric-value{font-size:clamp(10px,3.05vw,12px)}
+ .caelum-metric-sub{font-size:9px}
+ .caelum-goal-card{padding:15px 14px}
+ .caelum-goal-title{font-size:clamp(24px,7.2vw,27px)}
+}
+
+/* v52: goal editor + planned expenses */
+.caelum-modal{position:fixed;inset:0;z-index:3000;background:rgba(16,24,40,.38);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);display:none;align-items:flex-end;justify-content:center;padding:12px}
+.caelum-modal.open{display:flex}
+.caelum-modal-card{width:min(520px,100%);background:#fff;border:1px solid #e5e8ef;border-radius:28px;padding:18px;box-shadow:0 20px 60px rgba(16,24,40,.18);max-height:88vh;overflow:auto}
+.caelum-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.caelum-modal-head h3{margin:0;font-size:22px;letter-spacing:-.3px}.caelum-modal-close{width:38px;height:38px;padding:0;border-radius:50%;background:#f1f3f6;color:#667085;font-size:24px;line-height:1}
+.caelum-modal-label{display:block;font-size:12px;color:#697386;margin:10px 0 5px}.caelum-modal-input{margin:0!important;background:#fafbfc}.caelum-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}.caelum-modal-actions button{min-height:46px}.caelum-modal-primary{background:#5c4bd2}.caelum-planned-item{padding:12px 0;border-bottom:1px solid #edf0f4}.caelum-planned-item:last-child{border-bottom:0}.caelum-planned-meta{font-size:11px;color:#8a93a3;margin-top:3px}.caelum-planned-delete{background:#f1f3f6!important;color:#697386!important;padding:8px 10px!important;font-size:12px}
+.tool-planned .tool-icon:before{content:'◫';font-size:21px;position:absolute;left:5px;top:1px}
+@media(min-width:520px){.caelum-modal{align-items:center}}
+</style>
+
+<style>
+/* v33: compact Plan layout / safe area + fixes */
+html,body{min-height:100%;overflow-x:hidden}body{padding-bottom:env(safe-area-inset-bottom)}
+.app{padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:calc(78px + env(safe-area-inset-bottom))}
+/* v41: always open sections from the top, below the iPhone status area */
+.section{scroll-margin-top:env(safe-area-inset-top)}
+#plan{padding-bottom:12px}
+#plan>.card{margin-bottom:12px}
+#v25ToolContent{padding-bottom:8px}
+nav{padding-bottom:calc(8px + env(safe-area-inset-bottom));z-index:1000}
+/* v25: compact iPhone navigation */
+nav{gap:0}
+nav button{flex:1;min-width:0;padding:7px 2px;font-size:11px;white-space:nowrap}
+.v25-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.v25-tool{min-height:72px;padding:8px 4px;border-radius:14px;font-size:23px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.v25-tool small{font-size:12px;font-weight:700}
+#plan #v25ToolContent{margin-top:10px}
+.v25-card{background:#f8fafc;border-radius:14px;padding:12px;margin-top:10px}
+.v25-row{padding:8px 0;border-bottom:1px solid #e7eaf0}
+</style>
+
+
+<style>
+/* v43: rounded outline navigation */
+.bottom-nav{height:68px;align-items:center;gap:2px;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid #e9edf2;padding:6px max(12px,calc((100vw - 520px)/2));}
+.bottom-nav button{height:54px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#7f8899;font-size:0;padding:4px 2px;border-radius:18px}
+.bottom-nav button span{display:flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:0;position:relative}
+.bottom-nav button small{font-size:10px;font-weight:650;line-height:1;color:#697386}
+.bottom-nav button.active{color:#111827;background:rgba(245,246,248,.92)}
+.bottom-nav button.active small{color:#111827}
+.bottom-nav .nav-add{flex:0 0 52px;width:52px;height:52px;border-radius:50%;background:#111827;color:#fff;font-size:28px;box-shadow:0 4px 14px #00000018;margin:0 2px}
+.bottom-nav .nav-add span{width:auto;height:auto;font-size:30px;line-height:1}
+.bottom-nav .nav-add small{display:none}
+@media (min-width:521px){.bottom-nav{left:50%;right:auto;width:520px;transform:translateX(-50%)}}
+.home-recent{padding:9px 2px;border-bottom:1px solid #f0f2f5}.home-recent:last-child{border-bottom:0}.home-recent .positive{color:#16734b}.home-recent .negative{color:#b42318}
+.ops-debt-card>.row{padding:0 10px 4px}.ops-debt-card>#opsDebtList{margin-top:8px}.ops-debt-card>button{margin-left:10px}
+/* outline icons */
+.bottom-nav button:not(.nav-add) span::before{content:"";display:block;width:22px;height:22px;border:2.2px solid currentColor;border-radius:7px;box-sizing:border-box}
+.bottom-nav button:nth-child(1) span::before{clip-path:polygon(50% 4%,96% 42%,96% 96%,59% 96%,59% 66%,41% 66%,41% 96%,4% 96%,4% 42%)}
+.bottom-nav button:nth-child(2) span::before{border-radius:50%}
+.bottom-nav button:nth-child(2) span::after{content:"";position:absolute;width:7px;height:2px;background:currentColor;transform:translate(3px,-3px) rotate(45deg);border-radius:2px}
+.bottom-nav button:nth-child(4) span::before{border-radius:5px 5px 7px 7px}
+.bottom-nav button:nth-child(4) span::after{content:"";position:absolute;width:10px;height:7px;border:2px solid currentColor;border-radius:2px;transform:translate(4px,-2px)}
+.bottom-nav button:nth-child(5) span::before{border-radius:4px}
+.bottom-nav button:nth-child(5) span::after{content:"";position:absolute;width:15px;height:2px;background:currentColor;box-shadow:0 5px 0 currentColor,0 10px 0 currentColor;border-radius:2px}
+</style>
+
+<style>
+/* v44: welcome screen for first-time users */
+#welcomeOverlay{position:fixed;inset:0;z-index:20000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(15,23,42,.28);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#welcomeOverlay.show{display:flex}
+.welcome-card{width:min(100%,390px);padding:28px 22px 22px;border-radius:30px;background:rgba(255,255,255,.97);box-shadow:0 24px 70px rgba(15,23,42,.22);text-align:center}
+.welcome-icon{width:68px;height:68px;margin:0 auto 16px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:#f4f1ff;font-size:34px}
+.welcome-card h2{margin:0;font-size:25px;line-height:1.15;color:#111827}
+.welcome-sub{margin:10px 8px 20px;color:#697386;font-size:15px;line-height:1.45}
+.welcome-list{display:grid;gap:9px;text-align:left;margin:0 0 22px}
+.welcome-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:16px;background:#f7f8fa;color:#253047;font-size:14px}
+.welcome-item span:first-child{width:30px;text-align:center;font-size:19px}
+.welcome-start{width:100%;height:52px;border:0;border-radius:17px;background:#111827;color:#fff;font-size:16px;font-weight:750;cursor:pointer}
+.welcome-note{margin:11px 0 0;color:#929aaa;font-size:11px;line-height:1.35}
+</style>
+<style>
+/* v46: Caelum brand + cosmic header */
+.brand-head{padding:2px 2px 0}.brand-head h1{font-size:27px;letter-spacing:-.6px;font-weight:800}.brand-sub{margin-top:2px;color:rgba(255,255,255,.72);font-size:13px}.top{position:relative;margin:0 0 14px;padding:20px 18px;border-radius:26px;overflow:hidden;background:radial-gradient(circle at 82% 25%,rgba(136,113,255,.48),transparent 28%),radial-gradient(circle at 18% 80%,rgba(71,102,183,.28),transparent 32%),linear-gradient(145deg,#0d1428,#18284b 58%,#10172b);box-shadow:0 12px 30px rgba(18,29,58,.18)}.top::before{content:"";position:absolute;inset:0;background-image:radial-gradient(circle at 12% 22%,rgba(255,255,255,.85) 0 1px,transparent 1.5px),radial-gradient(circle at 34% 64%,rgba(255,255,255,.55) 0 1px,transparent 1.5px),radial-gradient(circle at 61% 25%,rgba(255,255,255,.7) 0 1px,transparent 1.5px),radial-gradient(circle at 88% 72%,rgba(255,255,255,.65) 0 1px,transparent 1.5px);pointer-events:none}.brand-head{position:relative;z-index:1}.brand-head h1{color:#fff}.welcome-icon span{font-size:31px;font-weight:850;line-height:1;color:#8f7cff}.welcome-icon{background:#f1eeff;color:#8f7cff}.welcome-start{background:#5b3df5}.bottom-nav button.active{color:#5b3df5;background:#f1eeff}.bottom-nav .nav-add{background:#5b3df5;color:#fff;box-shadow:0 6px 18px rgba(91,61,245,.28)}
+</style>
+
+<style>
+/* v47: Caelum dashboard metric cards inspired by the concept */
+.caelum-finance-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 12px}
+.caelum-metric{min-width:0;min-height:132px;padding:13px 10px 12px;border-radius:22px;background:rgba(255,255,255,.94);border:1px solid rgba(226,230,239,.9);box-shadow:0 8px 24px rgba(20,27,45,.06);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+.caelum-metric:active{transform:scale(.98);box-shadow:0 4px 14px rgba(20,27,45,.07)}
+.caelum-metric-icon{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:1.8px solid currentColor;font-size:20px;font-weight:500;margin-bottom:12px}
+.income-icon{color:#159a63}.expense-icon{color:#d34b58}.savings-icon,.goal-icon{color:#6551e8}
+.caelum-metric-label{font-size:12px;color:#667085;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.caelum-metric-value{margin-top:5px;font-size:16px;font-weight:800;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.caelum-metric-value.positive{color:#159a63}.caelum-metric-value.negative{color:#d34b58}.caelum-metric-value.accent{color:#5b3df5}
+.caelum-metric-sub{margin-top:4px;font-size:10px;color:#98a2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.caelum-goal-card{padding:16px 17px 14px;border-radius:24px;background:linear-gradient(135deg,#f8f7ff 0%,#fff 65%);border:1px solid #e9e6ff;box-shadow:0 10px 28px rgba(80,61,180,.07);margin-bottom:12px}
+.caelum-goal-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.caelum-goal-kicker{font-size:12px;color:#7a7890;margin-bottom:5px}.caelum-goal-title{font-size:24px;font-weight:850;color:#111827;letter-spacing:-.4px}.caelum-goal-percent{font-size:16px;font-weight:800;color:#5b3df5;padding-top:3px}
+.caelum-progress{height:9px;margin:14px 0 9px;background:#ebe9f7;border-radius:999px}.caelum-progress .bar{border-radius:999px;background:linear-gradient(90deg,#6c50ff,#8d7aff)}
+.caelum-goal-bottom{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#8a93a3}.caelum-goal-bottom span:first-child{color:#626b7d;font-weight:650}
+@media(max-width:430px){.caelum-finance-grid{gap:7px}.caelum-metric{min-height:126px;padding:11px 8px}.caelum-metric-icon{width:31px;height:31px;margin-bottom:10px}.caelum-metric-value{font-size:14px}.caelum-metric-label{font-size:11px}.caelum-goal-card{padding:15px}}
+</style>
+
+<style>
+/* v48: complete Caelum visual system */
+:root{--caelum-ink:#182238;--caelum-muted:#788397;--caelum-line:#e3e7ee;--caelum-purple:#6352d8;--caelum-purple-soft:#f1efff;--caelum-bg:#f5f7f8;--caelum-green:#15966a;--caelum-red:#d45562}
+body{background:linear-gradient(180deg,#f4f7f8 0%,#f7f8fa 100%);color:var(--caelum-ink)}
+.app{max-width:520px;padding-left:14px;padding-right:14px}
+.top{margin-bottom:12px;padding:18px 16px 22px;border-radius:28px;background:radial-gradient(circle at 82% 20%,rgba(121,111,213,.34),transparent 27%),radial-gradient(circle at 20% 78%,rgba(78,110,166,.22),transparent 30%),linear-gradient(145deg,#111a31,#24365d 57%,#141b30);box-shadow:0 12px 28px rgba(26,39,73,.15)}
+.brand-head h1{font-size:30px;letter-spacing:-.8px}.brand-sub{font-size:13px;color:rgba(255,255,255,.7)}
+.caelum-home .card{box-shadow:none}
+.caelum-balance-card{margin:0 0 12px;padding:18px 16px 14px;border:1px solid rgba(224,228,235,.9);border-radius:28px;background:rgba(255,255,255,.97);box-shadow:0 12px 30px rgba(30,43,68,.07)}
+.caelum-balance-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.caelum-balance-label{font-size:14px;color:var(--caelum-muted);display:flex;align-items:center;gap:8px}.caelum-eye{padding:0;background:transparent;color:#657187;font-size:14px;line-height:1}.caelum-balance-total{font-size:43px;font-weight:850;letter-spacing:-1.5px;line-height:1.05;margin-top:9px;white-space:nowrap}.caelum-balance-change{display:flex;align-items:baseline;gap:7px;margin-top:7px}.caelum-balance-change span{color:var(--caelum-green);font-size:19px;font-weight:800}.caelum-balance-change strong{color:var(--caelum-green);font-size:16px}.caelum-balance-change em{font-style:normal;color:#8791a2;font-size:12px}
+.caelum-balance-action{width:92px;height:64px;border-radius:20px;background:#f4f2ff;color:var(--caelum-purple);display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:none;padding:0}.caelum-bars{width:25px;height:25px;position:relative;display:inline-block}.caelum-bars:before,.caelum-bars:after{content:"";position:absolute;bottom:1px;width:5px;border-radius:4px;background:currentColor}.caelum-bars:before{left:3px;height:11px;box-shadow:8px -6px 0 currentColor,16px -13px 0 currentColor}.caelum-chevron,.caelum-mini-chevron,.caelum-goal-chevron{font-size:27px;line-height:1;color:#7e889b;font-weight:400}
+.caelum-account-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}.caelum-account{min-width:0;display:grid;grid-template-columns:42px minmax(0,1fr) 12px;align-items:center;gap:10px;padding:12px 11px;border:0;border-radius:22px;background:#f6f8fa;color:var(--caelum-ink);text-align:left;box-shadow:none}.caelum-account-icon{width:35px;height:35px;border:2px solid currentColor;border-radius:11px;position:relative;color:#273249}.wallet-icon:before{content:"";position:absolute;left:6px;top:9px;width:18px;height:12px;border:2px solid currentColor;border-radius:4px}.wallet-icon:after{content:"";position:absolute;right:3px;top:13px;width:5px;height:5px;border:2px solid currentColor;border-radius:50%;background:#f6f8fa}.coins-icon{border-radius:50%}.coins-icon:before,.coins-icon:after{content:"";position:absolute;left:5px;width:21px;height:8px;border:2px solid currentColor;border-radius:50%}.coins-icon:before{top:7px}.coins-icon:after{top:13px}.caelum-account small{display:block;color:#778296;font-size:11px}.caelum-account b{display:block;margin-top:3px;font-size:18px;line-height:1.05;white-space:nowrap}.caelum-account i{font-style:normal;font-size:24px;color:#7d8799}
+.caelum-finance-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:0 0 12px}.caelum-metric{appearance:none;min-width:0;min-height:145px;padding:12px 8px 11px;border-radius:24px;background:rgba(255,255,255,.98);border:1px solid var(--caelum-line);box-shadow:0 8px 22px rgba(27,39,61,.05);color:var(--caelum-ink);text-align:left;display:flex;flex-direction:column;align-items:stretch}.caelum-metric-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.caelum-metric-icon{width:35px;height:35px;border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px solid currentColor;position:relative;flex:0 0 auto}.income-icon{color:#269b70}.expense-icon{color:#d45a66}.savings-icon{color:#5374d9}.goal-icon{color:#6756d8}.icon-arrow-up,.icon-arrow-down{width:14px;height:14px;position:relative}.icon-arrow-up:before,.icon-arrow-down:before{content:"";position:absolute;left:6px;top:2px;width:2px;height:11px;background:currentColor;border-radius:2px}.icon-arrow-up:after,.icon-arrow-down:after{content:"";position:absolute;width:8px;height:8px;border-left:2px solid currentColor;border-top:2px solid currentColor}.icon-arrow-up:after{left:2px;top:1px;transform:rotate(45deg)}.icon-arrow-down:after{left:4px;top:5px;transform:rotate(225deg)}.icon-stack{width:17px;height:9px;border:2px solid currentColor;transform:skew(-20deg);position:relative}.icon-stack:before,.icon-stack:after{content:"";position:absolute;left:-2px;width:17px;height:9px;border:2px solid currentColor}.icon-stack:before{top:4px}.icon-stack:after{top:8px}.icon-target{width:18px;height:18px;border:2px solid currentColor;border-radius:50%;position:relative}.icon-target:before{content:"";position:absolute;inset:4px;border:2px solid currentColor;border-radius:50%}.icon-target:after{content:"";position:absolute;width:7px;height:2px;background:currentColor;right:-5px;top:1px;transform:rotate(-45deg);border-radius:2px}.caelum-mini-chevron{font-size:23px;color:#929cad}.caelum-metric-label{font-size:11px;color:#6f7a8e}.caelum-metric-value{margin-top:5px;font-size:clamp(11px,3.25vw,15px);font-weight:850;letter-spacing:-.2px;line-height:1.15;white-space:nowrap;overflow:visible;text-overflow:clip}.caelum-metric-value.positive{color:#15966a}.caelum-metric-value.negative{color:#d45562}.caelum-metric-value.accent{color:#5c4bd2}.caelum-metric-sub{margin-top:5px;font-size:10px;color:#9aa3b2;white-space:nowrap}
+.caelum-goal-card{appearance:none;width:100%;padding:17px 16px 15px;border-radius:27px;background:linear-gradient(135deg,#fbfaff 0%,#fff 72%);border:1px solid #e1ddfb;box-shadow:0 10px 28px rgba(70,60,145,.06);margin:0 0 12px;color:var(--caelum-ink);text-align:left}.caelum-goal-head{display:flex;align-items:center;gap:10px}.caelum-goal-icon{width:34px;height:34px;border-radius:12px;border:2px solid #6957d8;color:#6957d8;display:flex;align-items:center;justify-content:center}.caelum-goal-kicker{font-size:13px;color:#70798c}.caelum-goal-chevron{margin-left:auto}.caelum-goal-main{display:flex;justify-content:space-between;align-items:end;margin-top:6px}.caelum-goal-title{font-size:30px;font-weight:850;letter-spacing:-.8px}.caelum-goal-percent{font-size:20px;font-weight:850;color:#5c4bd2}.caelum-progress{height:9px;margin:14px 0 9px;background:#eae8f5}.caelum-progress .bar{background:linear-gradient(90deg,#6553d6,#8374e6)}.caelum-goal-bottom{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#687286}.caelum-goal-bottom span:first-child{font-weight:750}
+.caelum-home-card{margin:0 0 12px;padding:16px;border-radius:24px;background:#fff;border:1px solid #e6e9ee;box-shadow:0 8px 22px rgba(28,40,62,.045)}.caelum-row-title{display:flex;align-items:center;gap:9px;min-height:32px}.caelum-row-title b{font-size:18px}.caelum-link-button{margin-left:auto;background:#f0f1f4;color:#283348;padding:9px 14px;border-radius:15px;font-size:13px;box-shadow:none}.caelum-plan-settings .caelum-row-title{font-size:18px}.caelum-section-icon,.action-icon{position:relative;display:flex;align-items:center;justify-content:center}.sliders-icon{width:32px;height:32px;border-radius:11px;background:#f0f1f4}.sliders-icon:before{content:"☷";font-size:19px;color:#59657a}.caelum-actions-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}.caelum-actions-grid button{min-height:105px;padding:10px 5px;border:1px solid #edf0f4;border-radius:20px;background:#f7f8fa;color:#566176;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:10px;line-height:1.25;box-shadow:none}.action-icon{width:34px;height:34px;border-radius:12px;background:#f0eeff;color:#5d4cd5;font-size:24px}.plus-icon{font-weight:300}.transfer-icon{font-size:23px}.target-action .icon-target{width:17px;height:17px}.plan-icon{width:17px;height:21px;border:2px solid currentColor;border-radius:4px}.plan-icon:before{content:"";position:absolute;left:3px;right:3px;top:7px;border-top:2px solid currentColor;box-shadow:0 5px 0 currentColor}.caelum-recent-card .history-wrap{margin-top:7px}.caelum-debt-card{padding-bottom:12px}.caelum-debt-card #homeDebts:empty{display:none}
+/* consistent secondary screens */
+.section>.card,.section .caelum-section-card{border-radius:24px;border:1px solid #e5e9ef;box-shadow:0 8px 22px rgba(28,40,62,.045)}.section h3{font-size:20px;color:var(--caelum-ink)}.section-line-icon{display:inline-flex;width:30px;height:30px;margin-right:8px;vertical-align:-8px;border:2px solid #5f6b80;border-radius:10px;position:relative}.savings-line-icon:before{content:"";position:absolute;left:5px;right:5px;top:9px;height:7px;border:2px solid currentColor;border-radius:50%}.stats-line-icon:before{content:"";position:absolute;left:5px;bottom:5px;width:4px;height:9px;background:currentColor;box-shadow:7px -5px 0 currentColor,14px -10px 0 currentColor;border-radius:2px}.plan-line-icon:before{content:"";position:absolute;left:6px;right:6px;top:8px;border-top:2px solid currentColor;box-shadow:0 6px 0 currentColor}
+.v25-tool{background:#f7f8fa;border:1px solid #e6e9ee;color:#59657a;box-shadow:none}.v25-tool .tool-icon{width:31px;height:31px;border:2px solid currentColor;border-radius:10px;position:relative}.tool-payments .tool-icon:before{content:"";position:absolute;left:7px;right:7px;top:9px;border-top:2px solid currentColor;box-shadow:0 6px 0 currentColor}.tool-income .tool-icon:before{content:"↗";font-size:22px;position:absolute;left:4px;top:0}.tool-forecast .tool-icon:before{content:"◔";font-size:20px;position:absolute;left:5px;top:2px}.tool-goal .tool-icon:before{content:"◎";font-size:22px;position:absolute;left:4px;top:1px}.tool-move .tool-icon:before{content:"⇄";font-size:21px;position:absolute;left:4px;top:2px}.tool-settings .tool-icon:before{content:"☷";font-size:20px;position:absolute;left:5px;top:2px}
+.bottom-nav{height:74px;background:rgba(255,255,255,.94);border-top:1px solid #e5e9ef}.bottom-nav button{height:58px;border-radius:19px}.bottom-nav button.active{color:#5e4ed5;background:#f0eeff}.bottom-nav button.active small{color:#5e4ed5}.bottom-nav .nav-add{background:#5f4be0;box-shadow:0 8px 20px rgba(95,75,224,.22)}
+@media(max-width:430px){.caelum-balance-total{font-size:39px}.caelum-balance-action{width:78px}.caelum-account{grid-template-columns:35px minmax(0,1fr) 10px;gap:7px;padding:11px 9px}.caelum-account b{font-size:16px}.caelum-metric{min-height:139px;padding:11px 7px}.caelum-metric-value{font-size:clamp(10px,3.05vw,13px)}.caelum-metric-label{font-size:10px}.caelum-metric-sub{font-size:9px}.caelum-goal-title{font-size:27px}.caelum-actions-grid{gap:6px}.caelum-actions-grid button{font-size:9px}}
+</style>
+
+
+<style>
+/* v49: refined Caelum home + stable outline icon system */
+.top{min-height:96px;padding:18px 16px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.top-tools{display:flex;gap:8px;position:relative;z-index:2;margin-top:0}
+.top-tools button{width:46px;height:46px;border:1px solid rgba(255,255,255,.14);border-radius:16px;background:rgba(255,255,255,.13);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:none}
+.top-search-icon{width:17px;height:17px;border:2px solid currentColor;border-radius:50%;position:relative;display:block}
+.top-search-icon:after{content:"";position:absolute;width:7px;height:2px;background:currentColor;right:-5px;bottom:-2px;transform:rotate(45deg);border-radius:2px}
+.top-settings-icon{width:18px;height:18px;border:2px solid currentColor;border-radius:50%;position:relative;display:block}
+.top-settings-icon:before{content:"";position:absolute;inset:4px;border:1.5px solid currentColor;border-radius:50%}
+.top-settings-icon:after{content:"";position:absolute;inset:-5px;border:1.5px solid transparent;border-top-color:currentColor;border-bottom-color:currentColor;border-radius:50%}
+.caelum-plan-settings{display:none!important}
+.caelum-finance-grid{gap:8px}
+.caelum-metric{min-height:142px;padding:12px 8px 11px}
+.caelum-metric-value{font-size:clamp(11px,3vw,14px);letter-spacing:-.35px;overflow:visible}
+.caelum-metric-label{font-size:11px}
+.caelum-metric-sub{font-size:10px}
+.caelum-metric-icon{width:35px;height:35px}
+.caelum-goal-card{padding:17px 16px 15px}
+.caelum-goal-main{margin-top:8px}
+.caelum-goal-title{font-size:29px}
+.caelum-progress{height:10px;background:#eceaf4;display:block}
+.caelum-progress .bar{display:block;height:100%;min-width:0}
+.caelum-actions-card{margin-top:0}
+.caelum-actions-grid button{color:#566176;background:#f7f8fa}
+.caelum-actions-grid .action-icon{background:#f1efff;color:#5f50d2;border:1px solid #e5e0ff}
+.bottom-nav{height:76px}
+.bottom-nav button:not(.nav-add) span{width:30px;height:30px}
+.bottom-nav button:not(.nav-add) span::before,.bottom-nav button:not(.nav-add) span::after{content:none!important}
+.bottom-nav button svg{width:27px;height:27px;display:block;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.bottom-nav button small{font-size:10px;font-weight:700}
+.bottom-nav .nav-add{width:54px;height:54px;flex-basis:54px;font-size:31px}
+@media(max-width:430px){
+ .app{padding-left:12px;padding-right:12px}
+ .top{min-height:92px;padding:16px 14px 18px}
+ .top-tools button{width:42px;height:42px;border-radius:14px}
+ .brand-head h1{font-size:29px}
+ .caelum-balance-card{padding:17px 14px 13px}
+ .caelum-balance-total{font-size:40px}
+ .caelum-finance-grid{gap:6px}
+ .caelum-metric{min-height:136px;padding:10px 7px}
+ .caelum-metric-value{font-size:clamp(10px,3.05vw,13px)}
+ .caelum-metric-label{font-size:10px}
+ .caelum-metric-sub{font-size:9px}
+ .caelum-metric-top{margin-bottom:12px}
+ .caelum-goal-title{font-size:27px}
+ .caelum-actions-grid{gap:6px}
+ .caelum-actions-grid button{min-height:100px;font-size:9px}
+}
+</style>
+
+<style>
+/* v53: Caelum Plan + History visual system */
+.caelum-plan-shell,.caelum-history-shell{background:#fff;border:1px solid #e4e8ee;border-radius:26px;box-shadow:0 10px 26px rgba(28,40,62,.055);padding:16px;margin:0 0 12px}
+.caelum-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.caelum-section-title-wrap{display:flex;align-items:center;gap:11px;min-width:0}
+.caelum-section-title-wrap h3{margin:0;font-size:22px;letter-spacing:-.35px;color:#182238}
+.caelum-section-title-wrap p{margin:3px 0 0;color:#8993a3;font-size:11px;line-height:1.25}
+.caelum-section-svg{width:38px;height:38px;border:2px solid #66738a;border-radius:13px;position:relative;flex:0 0 auto;color:#66738a}
+.plan-head-svg:before{content:"";position:absolute;left:8px;right:8px;top:10px;border-top:2px solid currentColor;box-shadow:0 7px 0 currentColor,0 14px 0 currentColor}
+.plan-head-svg:after{content:"";position:absolute;left:6px;top:9px;width:3px;height:3px;background:currentColor;border-radius:50%;box-shadow:0 7px 0 currentColor,0 14px 0 currentColor}
+.caelum-plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.caelum-plan-tool{position:relative;min-width:0;min-height:92px;padding:12px 30px 12px 12px;border-radius:19px;border:1px solid #e8ebf0;background:#f8f9fb;color:#566176;text-align:left;display:grid;grid-template-columns:38px minmax(0,1fr);grid-template-rows:auto auto;column-gap:9px;align-items:center;box-shadow:none}
+.caelum-plan-tool i{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-style:normal;font-size:24px;color:#9aa3b2}
+.caelum-plan-tool b{font-size:14px;color:#27334a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.caelum-plan-tool small{font-size:10px;color:#9099a8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.plan-tool-icon{grid-row:1 / span 2;width:38px;height:38px;border-radius:13px;background:#f0eeff;color:#5f4ed5;position:relative;display:block}
+.icon-calendar:before{content:"";position:absolute;left:10px;top:9px;width:18px;height:16px;border:2px solid currentColor;border-radius:4px}.icon-calendar:after{content:"";position:absolute;left:10px;top:14px;width:18px;border-top:2px solid currentColor;box-shadow:5px -7px 0 -1px currentColor}
+.icon-income:before{content:"";position:absolute;left:18px;top:9px;width:2px;height:19px;background:currentColor;border-radius:2px}.icon-income:after{content:"";position:absolute;left:11px;top:8px;width:10px;height:10px;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:rotate(45deg)}
+.icon-forecast:before{content:"";position:absolute;left:9px;top:10px;width:20px;height:14px;border:2px solid currentColor;border-radius:50% 50% 45% 45%;border-top-color:transparent;transform:rotate(-18deg)}.icon-forecast:after{content:"";position:absolute;left:17px;top:8px;width:2px;height:16px;background:currentColor;transform:rotate(38deg);border-radius:2px}
+.icon-target-outline{border-radius:50%;width:20px;height:20px;margin:9px;border:2px solid currentColor;background:transparent}.icon-target-outline:before{content:"";position:absolute;inset:4px;border:2px solid currentColor;border-radius:50%}.icon-target-outline:after{content:"";position:absolute;width:8px;height:2px;background:currentColor;right:-6px;top:1px;transform:rotate(-45deg);border-radius:2px}
+.icon-note:before{content:"";position:absolute;left:10px;top:8px;width:18px;height:22px;border:2px solid currentColor;border-radius:4px}.icon-note:after{content:"";position:absolute;left:14px;top:15px;width:10px;border-top:2px solid currentColor;box-shadow:0 5px 0 currentColor}
+.icon-transfer:before{content:"⇄";position:absolute;left:7px;top:4px;font-size:25px;line-height:1;font-weight:500}
+.icon-sliders:before{content:"";position:absolute;left:9px;right:9px;top:10px;height:2px;background:currentColor;box-shadow:0 7px 0 currentColor,0 14px 0 currentColor}.icon-sliders:after{content:"";position:absolute;left:14px;top:7px;width:5px;height:7px;border:2px solid currentColor;border-radius:3px;background:#f0eeff;box-shadow:7px 7px 0 -2px #f0eeff,7px 7px 0 0 currentColor,2px 14px 0 -2px #f0eeff,2px 14px 0 0 currentColor}
+.caelum-plan-content{margin-top:12px}
+.caelum-plan-content .v25-card{background:#f8f9fb;border:1px solid #e8ebf0;border-radius:19px;padding:14px;margin:0}
+.caelum-plan-content .v25-card b{color:#27334a}
+.caelum-plan-content .muted{color:#8993a3}
+.caelum-plan-content button.secondary{background:#eceef3}
+.caelum-history-shell{padding:16px}
+.caelum-history-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.caelum-history-head h3{margin:0;font-size:22px;color:#182238}
+.caelum-history-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.caelum-history-filters select{width:100%;margin:0!important;padding:10px 11px!important;border:1px solid #e1e6ed!important;border-radius:13px!important;background:#f8f9fb!important;color:#3f4b60;font-size:14px!important}
+.caelum-history-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #edf0f4;min-width:0}
+.caelum-history-row:last-child{border-bottom:0}
+.history-icon{width:38px;height:38px;border-radius:13px;background:#f0f2f6;color:#68758b;display:flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto}
+.history-icon.expense{color:#c95663;background:#fff1f3}.history-icon.income{color:#26966b;background:#eef9f4}.history-icon.transfer{color:#5d68a0;background:#f1f3fa}
+.history-icon:before{content:"";width:17px;height:17px;border:2px solid currentColor;border-radius:5px}
+.history-icon.expense:after{content:"";position:absolute;width:8px;height:2px;background:currentColor;transform:rotate(45deg)}
+.history-icon.income:after{content:"";position:absolute;width:8px;height:8px;border-left:2px solid currentColor;border-top:2px solid currentColor;transform:translate(2px,-2px) rotate(45deg)}
+.history-icon.transfer:after{content:"⇄";position:absolute;font-size:16px;line-height:1}
+.caelum-history-row .history-note{flex:1;min-width:0}.caelum-history-row .history-note>div:first-child{font-size:13px;color:#2b374d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.caelum-history-row .history-date{font-size:10px;color:#9aa3b2;margin-top:3px}
+.caelum-history-amount{font-size:14px;font-weight:800;white-space:nowrap}
+@media(max-width:430px){.caelum-plan-shell,.caelum-history-shell{padding:14px;border-radius:24px}.caelum-plan-grid{gap:8px}.caelum-plan-tool{min-height:86px;padding:10px 27px 10px 10px}.plan-tool-icon{width:35px;height:35px}.caelum-plan-tool b{font-size:13px}.caelum-plan-tool small{font-size:9px}.caelum-history-head h3{font-size:20px}}
+</style>
+
+<style>
+/* v54: precise outline SVG icon system */
+.caelum-svg-icon{width:22px;height:22px;display:block;overflow:visible;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.caelum-metric-icon .caelum-svg-icon{width:22px;height:22px}
+.caelum-account-icon{display:flex!important;align-items:center;justify-content:center}
+.caelum-account-icon .caelum-svg-icon{width:24px;height:24px}
+.caelum-goal-icon .caelum-svg-icon{width:21px;height:21px}
+.action-icon .caelum-svg-icon{width:20px;height:20px}
+.plan-tool-icon{display:flex!important;align-items:center;justify-content:center}
+.plan-tool-icon .caelum-svg-icon{width:21px;height:21px}
+.caelum-section-svg{display:flex;align-items:center;justify-content:center}
+.caelum-section-svg .caelum-svg-icon{width:21px;height:21px}
+</style>
+
+<style>
+/* v54: disable legacy CSS-drawn icon internals */
+.icon-arrow-up:before,.icon-arrow-up:after,.icon-arrow-down:before,.icon-arrow-down:after,.icon-stack:before,.icon-stack:after,.icon-target:before,.icon-target:after,.wallet-icon:before,.wallet-icon:after,.coins-icon:before,.coins-icon:after,.plan-head-svg:before,.plan-head-svg:after,.icon-calendar:before,.icon-calendar:after,.icon-income:before,.icon-income:after,.icon-forecast:before,.icon-forecast:after,.icon-target-outline:before,.icon-target-outline:after,.icon-note:before,.icon-note:after,.icon-transfer:before,.icon-transfer:after,.icon-sliders:before,.icon-sliders:after{content:none!important;display:none!important}
+.caelum-metric-icon,.caelum-goal-icon,.action-icon,.plan-tool-icon,.caelum-account-icon{box-sizing:border-box}
+</style>
+<style>
+/* v56: Caelum cosmic system + restored Plan budget + clean operations/history */
+.welcome-symbol{width:30px;height:30px;border-radius:10px;background:#f0eeff;color:#5f4ed5;display:flex!important;align-items:center;justify-content:center;flex:0 0 auto}.welcome-symbol svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.top{background:radial-gradient(circle at 82% 18%,rgba(126,112,222,.38),transparent 26%),radial-gradient(circle at 22% 78%,rgba(73,108,174,.24),transparent 32%),linear-gradient(145deg,#10182f,#24365e 56%,#141b31);}
+.space-orbit{position:absolute;right:74px;bottom:12px;width:54px;height:30px;border:1px solid rgba(255,255,255,.18);border-radius:50%;transform:rotate(-20deg);opacity:.8;pointer-events:none}.space-planet{position:absolute;right:20px;top:9px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#e8e4ff,#8c7bea 65%,#5c4bd2);box-shadow:0 0 12px rgba(161,145,255,.55)}.space-orbit:before{content:"";position:absolute;inset:8px 13px;border:1px solid rgba(255,255,255,.28);border-radius:50%}
+.test-banner-title{display:flex;align-items:center;gap:8px;font-size:15px;color:#27334a}.lab-icon{width:18px;height:18px;border:1.8px solid #5f4ed5;border-radius:5px;display:inline-block;position:relative;transform:rotate(-12deg)}.lab-icon:after{content:"";position:absolute;left:3px;right:3px;bottom:3px;border-top:1.5px solid #5f4ed5}
+.caelum-budget-card{margin:0 0 12px;padding:15px 16px;border:1px solid #e2e6ed;border-radius:24px;background:linear-gradient(135deg,#fff 0%,#f8f8ff 100%);box-shadow:0 9px 24px rgba(28,40,62,.05)}.caelum-budget-top{display:flex;align-items:center;justify-content:space-between;gap:12px}.budget-kicker{display:block;color:#7b8495;font-size:12px;margin-bottom:3px}.caelum-budget-top strong{display:block;font-size:25px;letter-spacing:-.4px;color:#182238}.budget-galaxy{width:42px;height:42px;border-radius:14px;background:#f1eeff;color:#6652dc;display:flex;align-items:center;justify-content:center}.budget-galaxy svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}.caelum-budget-caption,.caelum-budget-foot{display:flex;justify-content:space-between;gap:8px;color:#8a93a3;font-size:11px;margin-top:7px}.caelum-budget-progress{height:7px;background:#ecebf5;border-radius:99px;overflow:hidden;margin-top:9px}.caelum-budget-progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#6d58dc,#8c7cf0);border-radius:99px;transition:width .2s}.caelum-budget-foot{align-items:center;margin-top:9px}.caelum-budget-foot span{color:#5f6b7e;font-weight:650}.caelum-budget-foot button{padding:7px 10px;border-radius:11px;background:#f0eff7;color:#5b4bd0;font-size:11px}
+.history-section-title{font-size:13px;font-weight:750;color:#59657a;margin:4px 0 2px}.history-section-title.category-title{margin-top:16px}.caelum-history-shell .history-wrap{margin-top:2px}
+.inline-action-icon{display:inline-flex;vertical-align:-5px;margin-right:6px}.inline-action-icon .caelum-svg-icon{width:18px;height:18px}.inline-heading-icon{display:inline-flex;vertical-align:-6px;margin-right:7px;width:27px;height:27px;border:1.5px solid #dfe4ec;border-radius:9px;align-items:center;justify-content:center;color:#59657a;background:#f7f8fa}.inline-heading-icon .caelum-svg-icon{width:17px;height:17px}
+.caelum-actions-grid button span:last-child{display:block;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.18}.caelum-actions-grid button:last-child span:last-child{font-size:9px}.caelum-actions-grid button{min-height:112px}
+.caelum-plan-tool{cursor:pointer}.caelum-plan-tool:active{transform:scale(.985)}
+@media(max-width:430px){.space-orbit{right:70px;bottom:10px;transform:scale(.9) rotate(-20deg)}.caelum-budget-card{padding:14px}.caelum-budget-top strong{font-size:23px}.caelum-budget-foot button{font-size:10px}.caelum-actions-grid button:last-child span:last-child{font-size:8.5px}}
+</style>
+</head>
+<body>
+<div id="welcomeOverlay" aria-modal="true" role="dialog" aria-labelledby="welcomeTitle">
+  <div class="welcome-card">
+    <div class="welcome-icon"><span>✦</span></div>
+    <h2 id="welcomeTitle">Добро пожаловать!</h2>
+    <div class="welcome-sub">Caelum — ваш личный финансовый ассистент. Помогает понимать, куда уходят деньги, планировать бюджет и двигаться к своим целям.</div>
+    <div class="welcome-list">
+      <div class="welcome-item"><span class="welcome-symbol"><svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="3"></rect><path d="M7 10h13M16 14h2"></path></svg></span><span>Следить за деньгами на карте и накоплениями</span></div>
+      <div class="welcome-item"><span class="welcome-symbol"><svg viewBox="0 0 24 24"><path d="M5 18h14"></path><path d="M6 15l4-4 3 2 5-6"></path></svg></span><span>Записывать доходы и расходы и видеть историю</span></div>
+      <div class="welcome-item"><span class="welcome-symbol"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></span><span>Планировать бюджет и контролировать лимиты</span></div>
+      <div class="welcome-item"><span class="welcome-symbol"><svg viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="3"></rect><path d="M7 10h4M7 14h7"></path></svg></span><span>Учитывать долги и платежи</span></div>
+      <div class="welcome-item"><span class="welcome-symbol"><svg viewBox="0 0 24 24"><circle cx="11" cy="13" r="6"></circle><circle cx="11" cy="13" r="2"></circle><path d="m15 9 5-5M16 4h4v4"></path></svg></span><span>Ставить финансовые цели и следить за прогрессом</span></div>
+    </div>
+    <button class="welcome-start" onclick="closeWelcome()">Начать</button>
+    <div class="welcome-note">Данные сохраняются в браузере на этом устройстве.</div>
+  </div>
+</div>
+
+<div class="app">
+<div class="top"><span class="space-orbit" aria-hidden="true"><span class="space-planet"></span></span><div class="brand-head"><h1 data-app-title>Caelum</h1><div class="brand-sub">Ваш финансовый ассистент</div></div><div class="top-tools"><button type="button" aria-label="История" onclick="show('stats')"><span class="top-search-icon"></span></button><button type="button" aria-label="Настройки" onclick="document.getElementById('openAppNameSettings').click()"><span class="top-settings-icon"></span></button></div></div><div id="testBanner" class="card" style="display:none;background:#fff4d6">
+<b class="test-banner-title"><span class="lab-icon" aria-hidden="true"></span>ТЕСТОВЫЙ РЕЖИМ</b>
+<div class="muted" style="margin:6px 0 10px">Тестовые цифры полностью отделены от реальных финансов.</div>
+<button class="secondary" onclick="resetTest()">Сбросить тест</button>
+</div>
+
+<section id="home" class="section active caelum-home">
+<div class="caelum-balance-card">
+  <div class="caelum-balance-head">
+    <div>
+      <div class="caelum-balance-label">Всего денег <button class="caelum-eye" type="button" aria-label="Скрыть баланс">◉</button></div>
+      <div class="caelum-balance-total" id="total">0 ₽</div>
+      <div class="caelum-balance-change"><span>↗</span><strong id="balanceChange">+0 ₽</strong><em>за месяц</em></div>
+    </div>
+    <button class="caelum-balance-action" type="button" onclick="show('stats')" aria-label="Открыть статистику"><span class="caelum-bars"></span><span class="caelum-chevron">›</span></button>
+  </div>
+  <div class="caelum-account-grid">
+    <button class="caelum-account" type="button" onclick="show('ops')"><span class="caelum-account-icon wallet-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"></rect><path d="M7 10h14"></path><path d="M16 14h2"></path><circle cx="16" cy="14" r="1"></circle></svg></span><span><small>На карте</small><b id="card">0 ₽</b></span><i>›</i></button>
+    <button class="caelum-account" type="button" onclick="show('savings')"><span class="caelum-account-icon coins-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="7" rx="8" ry="3"></ellipse><path d="M4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7"></path><path d="M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5"></path></svg></span><span><small>Накопления</small><b id="save">0 ₽</b></span><i>›</i></button>
+  </div>
+</div>
+
+<div class="caelum-finance-grid">
+  <button class="caelum-metric" type="button" onclick="show('stats')">
+    <span class="caelum-metric-top"><span class="caelum-metric-icon income-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 17 17 6"></path><path d="M8 6h9v9"></path></svg></span><span class="caelum-mini-chevron">›</span></span>
+    <span class="caelum-metric-label">Доходы</span><span class="caelum-metric-value positive" id="incHome">0 ₽</span><span class="caelum-metric-sub">за месяц</span>
+  </button>
+  <button class="caelum-metric" type="button" onclick="show('stats')">
+    <span class="caelum-metric-top"><span class="caelum-metric-icon expense-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7 17 18"></path><path d="M8 18h9V9"></path></svg></span><span class="caelum-mini-chevron">›</span></span>
+    <span class="caelum-metric-label">Расходы</span><span class="caelum-metric-value negative" id="expHome">0 ₽</span><span class="caelum-metric-sub">за месяц</span>
+  </button>
+  <button class="caelum-metric" type="button" onclick="show('savings')">
+    <span class="caelum-metric-top"><span class="caelum-metric-icon savings-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 9 14-2-3 8-14 2 3-8Z"></path><path d="m7 13 12-2"></path></svg></span><span class="caelum-mini-chevron">›</span></span>
+    <span class="caelum-metric-label">Накопления</span><span class="caelum-metric-value accent" id="saveHome">0 ₽</span><span class="caelum-metric-sub">на цели</span>
+  </button>
+  <button class="caelum-metric" type="button" onclick="show('plan')">
+    <span class="caelum-metric-top"><span class="caelum-metric-icon goal-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="13" r="6"></circle><circle cx="11" cy="13" r="2"></circle><path d="m15 9 5-5"></path><path d="M16 4h4v4"></path></svg></span><span class="caelum-mini-chevron">›</span></span>
+    <span class="caelum-metric-label">Цель</span><span class="caelum-metric-value accent" id="goalHome">250 000 ₽</span><span class="caelum-metric-sub" id="goalHomeSub">0%</span>
+  </button>
+</div>
+
+<button class="caelum-goal-card" type="button" onclick="show('plan')">
+  <span class="caelum-goal-head"><span class="caelum-goal-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="13" r="6"></circle><circle cx="11" cy="13" r="2"></circle><path d="m15 9 5-5"></path><path d="M16 4h4v4"></path></svg></span><span class="caelum-goal-kicker">Финансовая цель</span><span class="caelum-goal-chevron">›</span></span>
+  <span class="caelum-goal-main"><span class="caelum-goal-title" id="goalTitle">250 000 ₽</span><span class="caelum-goal-percent" id="percent">0%</span></span>
+  <span class="progress caelum-progress"><span class="bar" id="bar"></span></span>
+  <span class="caelum-goal-bottom"><span id="goalText">0 ₽ из 250 000 ₽</span><span id="goalRemain">До цели</span></span>
+</button>
+
+<div class="caelum-home-card caelum-plan-settings" aria-hidden="true">
+  <div class="caelum-row-title"><span class="caelum-section-icon sliders-icon"></span><b>Настройки плана</b><button class="caelum-link-button" type="button" onclick="v10Settings()">Изменить</button></div>
+  <div id="v10Settings" style="display:none;margin-top:10px">
+    <div id="v12AutoText" class="muted" style="margin-bottom:8px">Лимит фиксируется на месяц. Платежи по долгам тоже считаются расходами. Автоматический лимит считается по прошлым месяцам и не увеличивается из-за новых трат. Ввод суммы вручную — корректировка только текущего месяца.</div>
+    <label class="muted">Откладывать в месяц</label><input id="v10PlanMonthly" type="number" min="0" step="100" placeholder="20 000">
+    <label class="muted">Срок, месяцев</label><input id="v10PlanMonths" type="number" min="1" step="1" placeholder="9">
+    <label class="muted">Лимит расходов на месяц</label><div id="v12LimitHint" class="muted" style="margin:4px 0 8px"></div><input id="v10MonthlyLimit" type="number" min="0" step="100" placeholder="Можно изменить вручную">
+    <button onclick="v10SaveSettings()">Сохранить</button>
+  </div>
+</div>
+
+<div class="caelum-home-card caelum-actions-card">
+  <div class="caelum-row-title"><b>Быстрые действия</b><button class="caelum-link-button" type="button" onclick="show('ops')">Все</button></div>
+  <div class="caelum-actions-grid">
+    <button type="button" onclick="show('ops')"><span class="action-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="m6.5 10.5 5.5-5.5 5.5 5.5"></path></svg></span><span>Добавить<br>операцию</span></button>
+    <button type="button" onclick="moveToSavings()"><span class="action-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h14"></path><path d="m14 4 4 4-4 4"></path><path d="M20 16H6"></path><path d="m10 12-4 4 4 4"></path></svg></span><span>Перевод<br>между счетами</span></button>
+    <button type="button" onclick="openGoalEditor()"><span class="action-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="13.5" r="6"></circle><circle cx="10.5" cy="13.5" r="2"></circle><path d="m15 9 5-5"></path><path d="M16 4h4v4"></path></svg></span><span>Изменить<br>цель</span></button>
+    <button type="button" onclick="openPlannedExpense()"><span class="action-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="3"></rect><path d="M8 8h8"></path><path d="M8 12h8"></path><path d="M8 16h5"></path></svg></span><span>Запланировать<br>расход</span></button>
+  </div>
+</div>
+
+<div class="caelum-home-card caelum-recent-card"><div class="caelum-row-title"><b>Последние операции</b><button class="caelum-link-button" type="button" onclick="show('stats')">Все</button></div><div id="homeRecentHistory" class="history-wrap"></div></div>
+<div class="caelum-home-card caelum-debt-card">
+  <div class="caelum-row-title"><span class="caelum-debt-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="13" rx="3"></rect><path d="M7 10h4"></path><path d="M7 14h7"></path><path d="M17 13h.01"></path></svg></span><b>Долги</b><span id="debtTotal">0 ₽</span></div><div id="homeDebts"></div></div>
+</section>
+<section id="ops" class="section">
+<div class="card"><h3>Операция</h3>
+<label class="muted">Сумма</label><input id="opAmount" type="number" placeholder="1000">
+<label class="muted">Комментарий <span style="opacity:.65">(необязательно)</span></label><input id="opNote" placeholder="Например: продукты">
+<label class="muted">Категория <span style="opacity:.65">(необязательно)</span></label>
+<select id="opCategory" style="width:100%;padding:11px;border:1px solid #d9dee7;border-radius:11px;margin:5px 0 9px;font-size:16px">
+<option value="">Без категории</option>
+<option value="Еда">Еда</option>
+<option value="Транспорт">Транспорт</option>
+<option value="Жильё">Жильё</option>
+<option value="Связь">Связь</option>
+<option value="Развлечения">Развлечения</option>
+<option value="Подписки">Подписки</option>
+<option value="Одежда">Одежда</option>
+<option value="Здоровье">Здоровье</option><option value="Долги">Долги</option>
+<option value="Другое">Другое</option>
+</select>
+<div class="grid"><button onclick="addExpense()">− Расход</button><button onclick="addIncome()">+ Доход</button></div>
+</div>
+<div class="card"><h3>Перевод между счетами</h3><div class="grid"><button onclick="moveToSavings()"><span class="inline-action-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M4 8h14"></path><path d="m14 4 4 4-4 4"></path><path d="M20 16H6"></path><path d="m10 12-4 4 4 4"></path></svg></span>С карты в накопления</button><button class="secondary" onclick="withdrawSavings()"><span class="inline-action-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M4 8h14"></path><path d="m14 4 4 4-4 4"></path><path d="M20 16H6"></path><path d="m10 12-4 4 4 4"></path></svg></span>Из накоплений на карту</button></div></div>
+<div class="card ops-debt-card"><div class="row"><h3 style="margin:0"><span class="inline-heading-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="3"></rect><path d="M7 10h4"></path><path d="M7 14h7"></path><path d="M17 13h.01"></path></svg></span>Долги</h3><span class="muted" id="opsDebtTotal">0 ₽</span></div>
+<div id="opsDebtList" style="margin-top:8px"></div>
+<button class="secondary" style="margin-top:10px" onclick="addDebt()">Добавить долг</button></div>
+</section>
+
+<section id="savings" class="section">
+<div class="card caelum-section-card"><h3><span class="section-line-icon savings-line-icon"></span>Накопления</h3><div class="balance" id="save2">0 ₽</div>
+<div class="muted">Эти деньги не считаются обычным расходом при переводе с карты.</div><hr>
+<label class="muted">Ставка вклада, % годовых</label><input id="rate" type="number" step="0.1" placeholder="15">
+<button onclick="addInterest()">Начислить расчётные проценты</button></div>
+</section>
+
+<section id="debts" class="section">
+<div class="card"><h3>Долги</h3><div id="debtList"></div><hr>
+<button class="secondary" onclick="addDebt()">＋ Добавить долг</button></div>
+</section>
+
+<section id="stats" class="section">
+<div class="caelum-history-shell">
+  <div class="caelum-history-head"><div><h3>История операций</h3><div class="muted">Все движения денег</div></div><div class="muted" id="historyCount"></div></div>
+  <div class="caelum-history-filters"><select id="statsMonth"><option value="all">Все месяцы</option></select><select id="statsYear"><option value="all">Все годы</option></select></div>
+  <div class="grid" style="margin-bottom:12px"><div class="smallcard"><div class="label">Доходы</div><div class="value" id="inc">0 ₽</div></div><div class="smallcard"><div class="label">Расходы</div><div class="value" id="exp">0 ₽</div></div></div>
+  <div class="history-section-title">Операции</div><div id="history" class="history-wrap"></div>
+  <div class="history-section-title category-title">Расходы по категориям</div><div id="categoryStats" style="margin-bottom:8px"></div>
+</div>
+</section>
+
+<section id="plan" class="section">
+  <div class="caelum-plan-shell">
+    <div class="caelum-section-head">
+      <div class="caelum-section-title-wrap">
+        <span class="caelum-section-svg plan-head-svg" aria-hidden="true"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M7 5h12"></path><path d="M7 12h12"></path><path d="M7 19h12"></path><path d="M3.5 5h.01"></path><path d="M3.5 12h.01"></path><path d="M3.5 19h.01"></path></svg></span>
+        <div><h3>План</h3><p>Управляйте целями, платежами и будущими расходами</p></div>
+      </div>
+    </div>
+    <div class="caelum-budget-card">
+      <div class="caelum-budget-top"><div><span class="budget-kicker">Лимит расходов</span><strong id="planBudgetRemaining">0 ₽</strong></div><span class="budget-galaxy" aria-hidden="true"><svg viewBox="0 0 40 40"><ellipse cx="20" cy="20" rx="15" ry="7"></ellipse><ellipse cx="20" cy="20" rx="7" ry="15" transform="rotate(45 20 20)"></ellipse><circle cx="20" cy="20" r="3"></circle></svg></span></div>
+      <div class="caelum-budget-caption"><span id="planBudgetSpent">Потрачено 0 ₽</span><span id="planBudgetLimit">из 0 ₽</span></div>
+      <div class="caelum-budget-progress"><span id="planBudgetBar"></span></div>
+      <div class="caelum-budget-foot"><span>Можно потратить ещё в этом месяце</span><button type="button" onclick="v10Settings()">Изменить лимит</button></div>
+    </div>
+    <div class="caelum-plan-grid">
+      <button class="caelum-plan-tool tool-payments" data-tool="payments"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"></rect><path d="M8 3v4M16 3v4M4 9h16"></path></svg></span><b>Платежи</b><small>ближайшие</small><i>›</i></button>
+      <button class="caelum-plan-tool tool-income" data-tool="income"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M6 17 17 6"></path><path d="M8 6h9v9"></path></svg></span><b>Доходы</b><small>за период</small><i>›</i></button>
+      <button class="caelum-plan-tool tool-forecast" data-tool="forecast"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M5 18h14"></path><path d="M6 15l4-4 3 2 5-6"></path><path d="M15 7h3v3"></path></svg></span><b>Прогноз</b><small>по истории</small><i>›</i></button>
+      <button class="caelum-plan-tool tool-goal" data-tool="goal"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><circle cx="10" cy="14" r="6"></circle><circle cx="10" cy="14" r="2"></circle><path d="m14 10 5-5"></path><path d="M15 5h4v4"></path></svg></span><b>Цель</b><small>настроить</small><i>›</i></button>
+      <button class="caelum-plan-tool tool-planned" data-tool="planned"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M15 3v5h4M9 12h6M9 16h6"></path></svg></span><b>Расходы</b><small>запланированные</small><i>›</i></button>
+      <button class="caelum-plan-tool tool-move" data-tool="move"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M4 8h13"></path><path d="m13 4 4 4-4 4"></path><path d="M20 16H7"></path><path d="m11 12-4 4 4 4"></path></svg></span><b>Переезд</b><small>отдельный счёт</small><i>›</i></button>
+      <button class="caelum-plan-tool tool-settings" data-tool="settings"><span class="plan-tool-icon"><svg class="caelum-svg-icon" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path><circle cx="9" cy="6" r="2" fill="white"></circle><circle cx="15" cy="12" r="2" fill="white"></circle><circle cx="11" cy="18" r="2" fill="white"></circle></svg></span><b>Настройки</b><small>параметры</small><i>›</i></button>
+    </div>
+    <div id="v25ToolContent" class="caelum-plan-content"></div>
+  </div>
+</section>
+
+</div>
+
+
+<div id="caelumModal" class="caelum-modal" aria-hidden="true">
+  <div class="caelum-modal-card" role="dialog" aria-modal="true" aria-labelledby="caelumModalTitle">
+    <div class="caelum-modal-head"><h3 id="caelumModalTitle">Изменить цель</h3><button class="caelum-modal-close" type="button" onclick="closeCaelumModal()" aria-label="Закрыть">×</button></div>
+    <div id="caelumModalBody"></div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+<button onclick="show('home')" class="active"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 10.8 12 4l8.5 6.8v8.7a1.5 1.5 0 0 1-1.5 1.5h-5v-6h-4v6h-5A1.5 1.5 0 0 1 3.5 19.5z"/></svg></span><small>Главная</small></button>
+<button onclick="show('stats')"><span aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.2 2"/></svg></span><small>История</small></button>
+<button class="nav-add" onclick="show('ops')" aria-label="Добавить операцию"><span>＋</span></button>
+<button onclick="show('savings')"><span aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M7 8.5h10M7 12h7M7 15.5h4"/></svg></span><small>Накопления</small></button>
+<button onclick="show('plan')"><span aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><small>План</small></button>
+</nav>
+
+<script>
+const KEY="poland250_pwa_v2";
+const TEST_MODE = new URLSearchParams(location.search).get("test") === "1";
+const REAL_INITIAL = {
+ card:61000,savings:0,goalTarget:250000,plannedExpenses:[], debts:[
+ {name:"Кредит #1",balance:19853,payment:6629,date:"4"},
+ {name:"Кредит #2",balance:8255,payment:5505,date:"25"},
+ {name:"Кредит #3",balance:7200,payment:0,date:""},
+ {name:"Маме",balance:10000,payment:0,date:""}
+ ],income:0,expense:0,history:[]
+};
+const TEST_INITIAL = {
+ card:50000,savings:10000,goalTarget:250000,plannedExpenses:[], debts:[
+ {name:"Тестовый кредит",balance:12000,payment:3000,date:"10"},
+ {name:"Тестовый долг",balance:5000,payment:1000,date:"25"}
+ ],income:25000,expense:7000,history:[]
+};
+const STORAGE_KEY = TEST_MODE ? KEY+"_TEST" : KEY;
+const DB_NAME = "poland250_storage_v1";
+const DB_STORE = "states";
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function legacyRead(){
+  try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){const parsed=JSON.parse(raw); if(parsed&&typeof parsed==="object") return parsed;} } catch(e){console.warn("Legacy storage read failed",e)}
+  return null;
+}
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    if(!window.indexedDB) return reject(new Error("IndexedDB unavailable"));
+    const req=indexedDB.open(DB_NAME,1);
+    req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(DB_STORE)) req.result.createObjectStore(DB_STORE)};
+    req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error||new Error("IndexedDB open failed"));
+  });
+}
+async function idbGet(){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,"readonly"), st=tx.objectStore(DB_STORE), req=st.get(STORAGE_KEY); req.onsuccess=()=>resolve(req.result||null); req.onerror=()=>reject(req.error||new Error("IndexedDB read failed"));});
+}
+async function idbSet(value){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,"readwrite");tx.objectStore(DB_STORE).put(value,STORAGE_KEY);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error||new Error("IndexedDB write failed"));});
+}
+async function idbDelete(){
+  try{const db=await openDB(); await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,"readwrite");tx.objectStore(DB_STORE).delete(STORAGE_KEY);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});}catch(e){console.warn(e)}
+}
+let state;
+let ready=false;
+async function initState(){
+  let stored=null;
+  try{stored=await idbGet()}catch(e){console.warn("IndexedDB read failed",e)}
+  if(!stored) stored=legacyRead();
+  const isNewUser=!stored && !TEST_MODE;
+  state=stored && typeof stored==="object" ? stored : clone(TEST_MODE ? TEST_INITIAL : REAL_INITIAL);
+  if(!stored){try{await idbSet(state)}catch(e){console.warn("Initial save failed",e)}}
+  state.expenseCategories = state.expenseCategories || {};
+  state.planMonthly = Number(state.planMonthly || 0);
+  state.planMonths = Number(state.planMonths || 0);
+  state.externalReserve = Number(state.externalReserve || 0);
+  state.goalTarget = Math.max(1, Number(state.goalTarget || 250000));
+  state.plannedExpenses = Array.isArray(state.plannedExpenses) ? state.plannedExpenses : [];
+  state.monthlyLimit = Number(state.monthlyLimit || 0);
+  state.limitManual = !!state.limitManual;
+  state.autoLimitLocked = !!state.autoLimitLocked;
+  state.limitBaseExpense = Number(state.limitBaseExpense || 0);
+  state.limitMonth = state.limitMonth || new Date().toISOString().slice(0,7);
+  migrateHistoryDates();
+  ready=true; render();
+}
+async function save(){
+  if(!ready) return;
+  const snapshot=clone(state);
+  try{
+    await idbSet(snapshot);
+    // Keep a legacy backup too.
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(snapshot));
+  }catch(e){
+    try{localStorage.setItem(STORAGE_KEY,JSON.stringify(snapshot));}
+    catch(e2){alert("Не удалось сохранить данные. Проверьте настройки Safari и режим приватного просмотра.");console.error(e2)}
+  }
+  render();
+}
+function saveSyncBackup(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}}
+window.addEventListener("pagehide",saveSyncBackup);
+window.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveSyncBackup()});
+function rub(n){return Math.round(n).toLocaleString("ru-RU")+" ₽"}
+window.poland250GetState=()=>state;
+function totalDebt(){return state.debts.reduce((s,d)=>s+Number(d.balance||0),0)}
+function dateOnly(value){
+  if(value instanceof Date)return new Date(value.getFullYear(),value.getMonth(),value.getDate());
+  const m=String(value||"").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m?new Date(Number(m[1]),Number(m[2])-1,Number(m[3])):null;
+}
+function isoDateOnly(value){const d=dateOnly(value)||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function formatDate(value){const d=dateOnly(value);return d?d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"}):"Без даты"}
+function historyDateKey(x){return isoDateOnly(x.date||new Date())}
+function migrateHistoryDates(){let changed=false;(state.history||[]).forEach(x=>{if(!x.date){x.date=new Date().toISOString();changed=true}});if(changed)saveSyncBackup()}
+function setupStatsFilters(){
+ const month=document.getElementById("statsMonth"),year=document.getElementById("statsYear"); if(!month||!year)return;
+ const oldM=month.value||"all",oldY=year.value||"all";
+ const months=new Set(),years=new Set();(state.history||[]).forEach(x=>{const d=dateOnly(x.date);if(!d)return;months.add(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));years.add(String(d.getFullYear()))});
+ month.innerHTML='<option value="all">Все месяцы</option>'+[...months].sort().reverse().map(k=>{const [y,m]=k.split("-");return `<option value="${k}">${new Date(Number(y),Number(m)-1,1).toLocaleDateString("ru-RU",{month:"long",year:"numeric"})}</option>`}).join("");
+ year.innerHTML='<option value="all">Все годы</option>'+[...years].sort().reverse().map(y=>`<option value="${y}">${y}</option>`).join("");
+ month.value=[...months].includes(oldM)?oldM:"all";year.value=[...years].includes(oldY)?oldY:"all";
+ month.onchange=renderStats;year.onchange=renderStats;
+}
+function renderStats(){
+ const month=document.getElementById("statsMonth")?.value||"all",year=document.getElementById("statsYear")?.value||"all";
+ const rows=(state.history||[]).filter(x=>{const d=dateOnly(x.date);if(!d)return false;const mk=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");return (month==="all"||mk===month)&&(year==="all"||String(d.getFullYear())===year)});
+ let income=0,expense=0,cats={};rows.forEach(x=>{const a=Number(x.amount)||0,n=String(x.note||"");if(n.startsWith("Доход:"))income+=Math.abs(a);if(n.startsWith("Расход:")||n.startsWith("Платёж:")){expense+=Math.abs(a);const c=x.category||"Без категории";cats[c]=(cats[c]||0)+Math.abs(a)}});
+ document.getElementById("inc").textContent=rub(income);document.getElementById("exp").textContent=rub(expense);
+ const catRows=Object.entries(cats).sort((a,b)=>b[1]-a[1]);document.getElementById("categoryStats").innerHTML=catRows.length?catRows.map(x=>`<div class="row" style="padding:8px 0;border-bottom:1px solid #edf0f4"><span>${esc(x[0])}</span><b>${rub(x[1])}</b></div>`).join(""):'<div class="muted">Нет расходов за выбранный период.</div>';
+ const ordered=rows.slice().sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
+ document.getElementById("historyCount").textContent=rows.length?rows.length+" оп." : "";
+ document.getElementById("history").innerHTML=ordered.length?ordered.map(x=>{const a=Number(x.amount)||0,n=String(x.note||"");const type=n.startsWith("Доход:")?"income":((n.includes("→")||n.startsWith("Перевод:"))?"transfer":"expense");const cls=a>0?"positive":a<0?"negative":"";const cat=x.category?` · ${esc(x.category)}`:"";return `<div class="caelum-history-row"><span class="history-icon ${type}" aria-hidden="true"></span><div class="history-note"><div>${esc(x.note||"Операция")}${a<0&&cat?cat:""}</div><div class="history-date">${dateOnly(x.date)?.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"})||""}</div></div><b class="caelum-history-amount ${cls}">${a>0?"+":""}${rub(a)}</b></div>`}).join(""):'<div class="muted" style="margin-top:8px">За выбранный период операций нет.</div>';
+}
+function render(){
+ if(!state) return;
+ document.getElementById("card").textContent=rub(state.card);document.getElementById("save").textContent=rub(state.savings);
+ document.getElementById("save2").textContent=rub(state.savings);document.getElementById("total").textContent=rub(state.card+state.savings);
+ const goalTarget=Math.max(1,Number(state.goalTarget||250000));
+ let p=Math.min(100,Number(state.savings||0)/goalTarget*100);let net=(state.income||0)-(state.expense||0);document.getElementById("balanceChange").textContent=(net>=0?"+":"")+rub(net);document.getElementById("incHome").textContent=rub(state.income||0);document.getElementById("expHome").textContent=rub(state.expense||0);document.getElementById("saveHome").textContent=rub(state.savings||0);document.getElementById("goalHome").textContent=rub(goalTarget);document.getElementById("goalHomeSub").textContent=p.toFixed(1)+"%";document.getElementById("bar").style.width=p+"%";document.getElementById("percent").textContent=p.toFixed(1)+"%";document.getElementById("goalTitle").textContent=rub(goalTarget);document.getElementById("goalRemain").textContent="До цели "+rub(Math.max(0,goalTarget-state.savings));
+ document.getElementById("goalText").textContent=rub(state.savings)+" из "+rub(goalTarget);
+ document.getElementById("debtTotal").textContent=rub(totalDebt());
+ document.getElementById("inc").textContent=rub(state.income);document.getElementById("exp").textContent=rub(state.expense);
+ let cats=state.expenseCategories||{}, catRows=Object.entries(cats).filter(x=>Number(x[1])>0).sort((a,b)=>b[1]-a[1]);
+ document.getElementById("categoryStats").innerHTML=catRows.length?catRows.map(x=>`<div class="row" style="padding:6px 0"><span>${esc(x[0])}</span><b>${rub(x[1])}</b></div>`).join(""):'<div class="muted">Пока нет расходов с указанной категорией.</div>';
+ const left=Math.max(0,goalTarget-Number(state.savings||0)), pm=Number(state.planMonthly||0), lim=Number(state.monthlyLimit||0);
+ document.getElementById("v10Plan").textContent=pm?rub(pm)+"/мес":"Не задан";
+ document.getElementById("v10PlanSub").textContent=pm?"≈ "+Math.ceil(left/pm)+" мес.":"Настроить";
+ v13EnsureBudget(state);
+ const effectiveLimit=v13EffectiveLimit(state);
+ const monthSpent=v19ActualMonthSpent(state);
+ const budgetRemaining=Math.max(0,effectiveLimit-monthSpent);
+ const budgetPct=effectiveLimit>0?Math.min(100,monthSpent/effectiveLimit*100):0;
+ const pb=document.getElementById("planBudgetRemaining"); if(pb) pb.textContent=effectiveLimit?rub(budgetRemaining):"—";
+ const pbs=document.getElementById("planBudgetSpent"); if(pbs) pbs.textContent="Потрачено "+rub(monthSpent);
+ const pbl=document.getElementById("planBudgetLimit"); if(pbl) pbl.textContent=effectiveLimit?"из "+rub(effectiveLimit):"Лимит не задан";
+ const pbb=document.getElementById("planBudgetBar"); if(pbb) pbb.style.width=budgetPct+"%";
+ document.getElementById("v10Limit").textContent=effectiveLimit?rub(effectiveLimit):"Считаю…";
+ document.getElementById("v10LimitSub").textContent=effectiveLimit?"Осталось "+rub(Math.max(0,effectiveLimit-monthSpent)):"Нужно больше истории";
+ document.getElementById("v10Left").textContent=rub(left);
+ document.getElementById("v10LeftSub").textContent=Math.min(100,Math.round(Number(state.savings||0)/goalTarget*100))+"% цели";
+ document.getElementById("v10Spend").textContent=rub(state.expense);
+ document.getElementById("v10SpendSub").textContent=catRows.length
+   ? catRows.slice(0,3).map(x=>x[0]+": "+rub(x[1])).join(" · ")
+   : "Без категорий";
+ let target="—";
+ let forecastMonthly=pm;
+ if(!forecastMonthly){
+   const incomeMonths={};
+   (state.history||[]).forEach(x=>{
+     const a=Number(x.amount||0), note=String(x.note||""), d=x.date?new Date(x.date):null;
+     if(a<=0||!note.startsWith("Доход:")||!d||isNaN(d)) return;
+     const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+     incomeMonths[k]=(incomeMonths[k]||0)+a;
+   });
+   const incVals=Object.values(incomeMonths);
+   if(incVals.length){
+     const recent=incVals.slice(-3);
+     const avgIncome=recent.reduce((a,b)=>a+b,0)/recent.length;
+     forecastMonthly=Math.max(0,Math.round(avgIncome-effectiveLimit));
+   }
+ }
+ if(forecastMonthly>0){
+   let d=new Date();d.setMonth(d.getMonth()+Math.ceil(left/forecastMonthly));
+   target=d.toLocaleDateString("ru-RU",{month:"long",year:"numeric"});
+ }
+ document.getElementById("v10Date").textContent=target;
+ document.getElementById("v10DateSub").textContent=forecastMonthly
+   ?"Автоматически: ≈ "+rub(forecastMonthly)+"/мес. в накопления"
+   :"Недостаточно истории доходов";
+ let html=state.debts.map((d,i)=>`<div class="debt"><div class="row"><b>${esc(d.name)}</b><b>${rub(d.balance)}</b></div><div class="muted">Платёж: ${rub(d.payment||0)}${d.date?" · "+esc(d.date)+" числа":""}</div><div class="grid" style="margin-top:8px"><button onclick="payDebt(${i})">− Платёж</button><button class="secondary" onclick="editDebt(${i})">Изменить</button></div></div>`).join("");
+ document.getElementById("debtList").innerHTML=html;
+ const opsDebtList=document.getElementById("opsDebtList");
+ const opsDebtTotal=document.getElementById("opsDebtTotal");
+ if(opsDebtTotal) opsDebtTotal.textContent=rub(state.debts.reduce((sum,d)=>sum+Number(d.balance||0),0));
+ if(opsDebtList) opsDebtList.innerHTML=state.debts.length?state.debts.map((d,i)=>`<div class="debt" style="padding:9px 0;border-bottom:1px solid #eef1f5"><div class="row"><b>${esc(d.name)}</b><b>${rub(d.balance)}</b></div><div class="muted">Платёж: ${rub(d.payment||0)}${d.date?" · "+esc(d.date)+" числа":""}</div><div class="grid" style="margin-top:8px"><button onclick="payDebt(${i})">− Платёж</button><button class="secondary" onclick="editDebt(${i})">Изменить</button></div></div>`).join(""):"<div class=\"muted\">Долгов пока нет</div>";
+ document.getElementById("homeDebts").innerHTML=state.debts.slice(0,3).map(d=>`<div class="row" style="margin-top:8px"><span>${esc(d.name)}</span><b>${rub(d.balance)}</b></div>`).join("");
+ setupStatsFilters();
+ renderStats();
+ const recent=(state.history||[]).slice(-5).reverse();
+ const recentEl=document.getElementById("homeRecentHistory");
+ if(recentEl){recentEl.innerHTML=recent.length?recent.map(x=>{const pos=Number(x.amount||0)>0;return `<div class="row home-recent"><span class="history-note">${esc(x.note||"Операция")}<div class="history-date">${formatDate(x.date)}</div></span><b class="${pos?"positive":"negative"}">${pos?"+":""}${rub(x.amount)}</b></div>`}).join(""):'<div class="muted" style="margin-top:8px">Пока нет операций</div>';}
+
+}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function amount(){return Number(document.getElementById("opAmount").value)||0}
+function note(){return document.getElementById("opNote").value||"Операция"}
+function addExpense(){
+ let a=amount();if(a<=0||a>state.card)return alert("Проверь сумму");
+ const cat=document.getElementById("opCategory").value||"Без категории";
+ state.card-=a;state.expense+=a;state.monthSpent=Number(state.monthSpent||0)+a;
+ state.expenseCategories=state.expenseCategories||{};
+ state.expenseCategories[cat]=Number(state.expenseCategories[cat]||0)+a;
+ state.history.push({note:"Расход: "+note(),amount:-a,category:cat,date:isoDateOnly(new Date())});
+ document.getElementById("opAmount").value="";document.getElementById("opNote").value="";document.getElementById("opCategory").value="";
+ save()
+}
+function addIncome(){let a=amount();if(a<=0)return alert("Проверь сумму");state.card+=a;state.income+=a;state.history.push({note:"Доход: "+note(),amount:a,date:isoDateOnly(new Date())});document.getElementById("opAmount").value="";document.getElementById("opNote").value="";save()}
+function moveToSavings(){let a=Number(prompt("Сколько перевести с карты в накопления?"));if(!a||a<=0||a>state.card)return;if(confirm("Перевести "+rub(a)+"?")){state.card-=a;state.savings+=a;state.history.push({note:"Перевод: карта → накопления",amount:-a,date:isoDateOnly(new Date())});save()}}
+function withdrawSavings(){let a=Number(prompt("Сколько вывести из накоплений на карту?"));if(!a||a<=0||a>state.savings)return;state.savings-=a;state.card+=a;state.history.push({note:"Перевод: накопления → карта",amount:a,date:isoDateOnly(new Date())});save()}
+function addInterest(){let r=Number(document.getElementById("rate").value);if(r>0){let i=state.savings*r/100/12;if(confirm("Начислить примерно "+rub(i)+"?")){state.savings+=i;state.history.push({note:"Проценты по накоплениям",amount:i,date:isoDateOnly(new Date())});save()}}}
+function payDebt(i){
+  let d=state.debts[i],a=Number(d.payment)||0;
+  if(!a||a>state.card||d.balance<=0)return alert("Проверь платёж и деньги на карте");
+  a=Math.min(a,d.balance); const name=d.name; const now=new Date().toISOString();
+  state.card-=a;d.balance-=a;state.expense+=a;state.monthSpent=Number(state.monthSpent||0)+a;
+  state.expenseCategories=state.expenseCategories||{};
+  state.expenseCategories["Долги"]=Number(state.expenseCategories["Долги"]||0)+a;
+  state.history.push({note:"Платёж: "+name,amount:-a,category:"Долги",date:now});
+  const closed=d.balance<=0;
+  if(closed) state.debts.splice(i,1); save(); if(closed)setTimeout(()=>alert("Долг «"+name+"» успешно погашен и удалён из списка долгов!"),50);
+}
+function editDebt(i){
+  let d=state.debts[i];
+  let n=prompt("Название",d.name); if(n===null)return;
+  n=n.trim(); if(!n)return alert("Название не может быть пустым");
+  let b=Number(prompt("Остаток долга",d.balance));
+  if(!Number.isFinite(b)||b<0)return alert("Остаток долга должен быть не меньше 0");
+  let p=Number(prompt("Ежемесячный платёж",d.payment));
+  if(!Number.isFinite(p)||p<0)return alert("Платёж должен быть не меньше 0");
+  let date=prompt("Дата платежа",d.date||"");
+  d.name=n; d.balance=b; d.payment=p; d.date=date||"";
+  save();
+}
+function addDebt(){let n=prompt("Название долга");if(!n)return;let b=Number(prompt("Остаток"));if(isNaN(b)||b<=0)return;let p=Number(prompt("Ежемесячный платёж",0))||0;let date=prompt("Дата платежа","");state.debts.push({name:n,balance:b,payment:p,date:date||""});save()}
+
+
+function v13MonthKey(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+function v13MonthSpent(s){
+  const base=Number(s.limitBaseExpense||0);
+  return Math.max(0,Number(s.expense||0)-base);
+}
+function v13AutoLimit(s){
+  const vals=[];
+  const byMonth={};
+  (s.history||[]).forEach(x=>{
+    if(Number(x.amount||0)>=0) return;
+    const note=String(x.note||"");
+    const isRealExpense=note.startsWith("Расход:") || note.startsWith("Платёж:");
+    if(!isRealExpense) return;
+    const d=x.date?new Date(x.date):null;
+    if(!d||isNaN(d)) return;
+    const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    byMonth[k]=(byMonth[k]||0)+Math.abs(Number(x.amount||0));
+  });
+  const current=v13MonthKey();
+  Object.keys(byMonth).forEach(k=>{if(k!==current) vals.push(byMonth[k])});
+  if(vals.length){
+    const recent=vals.slice(-3);
+    const avg=recent.reduce((a,b)=>a+b,0)/recent.length;
+    return Math.max(500,Math.ceil(avg*1.15/500)*500);
+  }
+  // First month / insufficient history: create a conservative starting
+  // estimate from current spending once, then lock it for the month.
+  const currentSpent=v13MonthSpent(s);
+  return currentSpent>0 ? Math.max(500,Math.ceil(currentSpent*1.15/500)*500) : 0;
+}
+function v13EnsureBudget(s){
+  const m=v13MonthKey();
+  if(typeof s.monthSpent !== "number" || !Number.isFinite(s.monthSpent)){
+    // Migration for older test versions: treat already recorded expenses
+    // as this month's spent amount, then track new expenses separately.
+    s.monthSpent=Math.max(0,Number(s.expense||0));
+  }
+  if(s.limitMonth!==m){
+    s.limitMonth=m;
+    s.monthSpent=0;
+    s.limitBaseExpense=Number(s.expense||0);
+    if(!s.limitManual){
+      s.monthlyLimit=v13AutoLimit(s);
+      s.autoLimitLocked=true;
+    }
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(s));
+  }
+  if(!s.autoLimitLocked && !s.limitManual){
+    s.monthlyLimit=v13AutoLimit(s);
+    s.autoLimitLocked=true;
+    s.limitBaseExpense=Number(s.limitBaseExpense||s.expense||0);
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(s));
+  }
+}
+function v13EffectiveLimit(s){
+  v13EnsureBudget(s);
+  return s.limitManual && Number(s.monthlyLimit)>0 ? Number(s.monthlyLimit) : Number(s.monthlyLimit||0);
+}
+function v19ActualMonthSpent(s){
+  v13EnsureBudget(s);
+  return Math.max(0,Number(s.monthSpent||0));
+}
+document.getElementById("caelumModal")?.addEventListener("click",e=>{if(e.target.id==="caelumModal")closeCaelumModal()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeCaelumModal()});
+function closeCaelumModal(){const m=document.getElementById("caelumModal");if(m){m.classList.remove("open");m.setAttribute("aria-hidden","true")}}
+function openCaelumModal(title,body){const m=document.getElementById("caelumModal"),t=document.getElementById("caelumModalTitle"),b=document.getElementById("caelumModalBody");if(!m)return;t.textContent=title;b.innerHTML=body;m.classList.add("open");m.setAttribute("aria-hidden","false")}
+function openGoalEditor(){
+ const current=Math.max(1,Number(state.goalTarget||250000));
+ openCaelumModal("Изменить цель",`<label class="caelum-modal-label">Сумма финансовой цели</label><input id="goalTargetInput" class="caelum-modal-input" type="number" min="1" step="1000" value="${current}" placeholder="250000"><div class="muted" style="margin-top:7px">Накопления уже учтены. Изменение цели не меняет баланс и историю операций.</div><div class="caelum-modal-actions"><button type="button" class="secondary" onclick="closeCaelumModal()">Отмена</button><button type="button" class="caelum-modal-primary" onclick="saveGoalTarget()">Сохранить</button></div>`);
+ setTimeout(()=>document.getElementById("goalTargetInput")?.focus(),50);
+}
+function saveGoalTarget(){const input=document.getElementById("goalTargetInput"),v=Math.round(Number(input?.value)||0);if(v<=0)return alert("Введите сумму больше нуля");state.goalTarget=v;closeCaelumModal();save()}
+function openPlannedExpense(){
+ const today=new Date(); const d=today.getFullYear()+"-"+String(today.getMonth()+1).padStart(2,"0")+"-"+String(today.getDate()).padStart(2,"0");
+ openCaelumModal("Запланировать расход",`<label class="caelum-modal-label">Сумма</label><input id="plannedAmount" class="caelum-modal-input" type="number" min="1" step="100" placeholder="5000"><label class="caelum-modal-label">Название</label><input id="plannedTitle" class="caelum-modal-input" type="text" placeholder="Например: билеты"><label class="caelum-modal-label">Дата</label><input id="plannedDate" class="caelum-modal-input" type="date" value="${d}"><label class="caelum-modal-label">Категория</label><select id="plannedCategory" class="caelum-modal-input"><option value="">Без категории</option><option value="Еда">Еда</option><option value="Транспорт">Транспорт</option><option value="Жильё">Жильё</option><option value="Связь">Связь</option><option value="Развлечения">Развлечения</option><option value="Подписки">Подписки</option><option value="Одежда">Одежда</option><option value="Здоровье">Здоровье</option><option value="Другое">Другое</option></select><div class="caelum-modal-actions"><button type="button" class="secondary" onclick="closeCaelumModal()">Отмена</button><button type="button" class="caelum-modal-primary" onclick="savePlannedExpense()">Запланировать</button></div>`);
+ setTimeout(()=>document.getElementById("plannedAmount")?.focus(),50);
+}
+function savePlannedExpense(){const amount=Math.round(Number(document.getElementById("plannedAmount")?.value)||0),title=(document.getElementById("plannedTitle")?.value||"Запланированный расход").trim(),date=document.getElementById("plannedDate")?.value,category=document.getElementById("plannedCategory")?.value||"";if(amount<=0)return alert("Введите сумму");if(!date)return alert("Выберите дату");state.plannedExpenses=Array.isArray(state.plannedExpenses)?state.plannedExpenses:[];state.plannedExpenses.push({id:Date.now(),amount,title:title||"Запланированный расход",date,category});closeCaelumModal();save();show("plan");setTimeout(()=>{document.querySelector('.caelum-plan-tool[data-tool="planned"]')?.click()},0)}
+function deletePlannedExpenseById(id){if(!Array.isArray(state.plannedExpenses))return;state.plannedExpenses=state.plannedExpenses.filter(x=>Number(x.id)!==Number(id));save();setTimeout(()=>document.querySelector('.caelum-plan-tool[data-tool="planned"]')?.click(),0)}
+
+function v10Settings(){
+  let e=document.getElementById("v10Settings");
+  const opening=e.style.display==="none";
+  e.style.display=opening?"block":"none";
+  if(opening){
+    document.getElementById("v10PlanMonthly").value=Number(state.planMonthly||0)||"";
+    document.getElementById("v10PlanMonths").value=Number(state.planMonths||0)||"";
+    document.getElementById("v10MonthlyLimit").value=Number(state.monthlyLimit||0)||"";
+    document.getElementById("v12LimitHint").textContent=
+      state.limitManual ? "Сейчас установлен ручной лимит." :
+      (Number(state.monthlyLimit||0) ? "Сейчас используется автоматический лимит." : "Автоматический лимит пока не рассчитан.");
+  }
+}
+function v10SaveSettings(){
+ state.planMonthly=Math.max(0,Number(document.getElementById("v10PlanMonthly").value||0));
+ state.planMonths=Math.max(0,Number(document.getElementById("v10PlanMonths").value||0));
+ const rawLimit=document.getElementById("v10MonthlyLimit").value.trim();
+ const entered=Number(rawLimit||0);
+ const currentMonth=v13MonthKey();
+ const sameMonth=state.limitMonth===currentMonth;
+ state.monthlyLimit=Math.max(0,entered);
+ state.limitManual=rawLimit!=="" && entered>0;
+ // IMPORTANT: changing the limit during the same month must NOT reset
+ // the amount already spent in that month.
+ if(!sameMonth || !Number.isFinite(Number(state.limitBaseExpense))) {
+   state.limitBaseExpense=Number(state.expense||0);
+ }
+ state.limitMonth=currentMonth;
+ state.autoLimitLocked=!state.limitManual;
+ if(!state.limitManual){
+   state.monthlyLimit=v13AutoLimit(state);
+   state.autoLimitLocked=true;
+   state.limitBaseExpense=Number(state.limitBaseExpense||state.expense||0);
+ }
+ save();document.getElementById("v10Settings").style.display="none";
+}
+function show(id){document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));document.getElementById(id).classList.add("active");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("active"));[...document.querySelectorAll("nav button")].find(x=>x.getAttribute("onclick").includes("'"+id+"'")).classList.add("active");window.scrollTo(0,0)}
+async function resetTest(){await idbDelete();try{localStorage.removeItem(STORAGE_KEY)}catch(e){}state=clone(TEST_INITIAL);await idbSet(state);saveSyncBackup();render()}
+if(TEST_MODE) document.getElementById("testBanner").style.display="block";
+initState();
+</script>
+
+
+
+<script>
+(function(){
+  const KEY='finora_welcome_seen_v1';
+  const overlay=document.getElementById('welcomeOverlay');
+  window.closeWelcome=function(){
+    try{localStorage.setItem(KEY,'1')}catch(e){}
+    if(overlay) overlay.classList.remove('show');
+  };
+  try{
+    if(!localStorage.getItem(KEY) && overlay) overlay.classList.add('show');
+  }catch(e){
+    if(overlay) overlay.classList.add('show');
+  }
+})();
+</script>
+
+<div id="appNameSettings" style="display:none;position:fixed;left:12px;right:12px;top:52px;z-index:9999;padding:12px 14px;border:1px solid #ddd;border-radius:14px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.12)">
+  <div style="font-weight:700;margin-bottom:8px">Название приложения</div>
+  <div style="display:flex;gap:8px">
+    <input id="appNameInput" maxlength="40" placeholder="Мои финансы" style="flex:1;min-width:0;padding:10px 12px;border:1px solid #ccc;border-radius:10px;font-size:16px">
+    <button id="saveAppName" style="padding:10px 14px;border:0;border-radius:10px">Сохранить</button>
+  </div>
+</div>
+<button id="openAppNameSettings" aria-label="Название приложения" style="display:none">Настройки</button>
+<script>
+(function(){
+ const K='poland250_app_name_v1', D='Caelum';
+ const box=document.getElementById('appNameSettings'), input=document.getElementById('appNameInput'), save=document.getElementById('saveAppName'), open=document.getElementById('openAppNameSettings');
+ function name(){return localStorage.getItem(K)||D}
+ function apply(){
+   const n=name(); input.value=n; document.title=n+' · Ваш финансовый ассистент';
+   document.querySelectorAll('h1,[data-app-title]').forEach(el=>{el.textContent=n});
+ }
+ open.onclick=()=>{box.style.display=box.style.display==='none'?'block':'none';if(box.style.display==='block')input.focus()};
+ save.onclick=()=>{localStorage.setItem(K,input.value.trim()||D);apply();box.style.display='none'};
+ apply();
+})();
+</script>
+
+<script>
+(function(){
+  const content=document.getElementById("v25ToolContent");
+  const money=n=>new Intl.NumberFormat("ru-RU").format(Math.round(Number(n)||0))+" ₽";
+  const getState=()=>window.poland250GetState?window.poland250GetState():null;
+  const realExpenses=s=>(s.history||[]).filter(x=>{const note=String(x.note||"");return note.startsWith("Расход:")||note.startsWith("Платёж:")});
+  const incomes=s=>(s.history||[]).filter(x=>String(x.note||"").startsWith("Доход:"));
+  const monthKey=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  function forecast(s){
+    const byMonth={};
+    (s.history||[]).forEach(x=>{
+      const d=x.date?new Date(x.date):null;if(!d||isNaN(d))return;
+      const k=monthKey(d);const n=String(x.note||"");const a=Math.abs(Number(x.amount)||0);
+      if(n.startsWith("Доход:")) byMonth[k]??={income:0,expense:0};
+      if(n.startsWith("Доход:")) byMonth[k].income+=a;
+      if(n.startsWith("Расход:")||n.startsWith("Платёж:")){byMonth[k]??={income:0,expense:0};byMonth[k].expense+=a;}
+    });
+    const vals=Object.values(byMonth).filter(x=>x.income>0).slice(-3);
+    if(!vals.length)return null;
+    const ai=vals.reduce((z,x)=>z+x.income,0)/vals.length;
+    const ae=vals.reduce((z,x)=>z+x.expense,0)/vals.length;
+    return {ai,ae,monthly:Math.max(0,ai-ae)};
+  }
+  function render(tool){
+    const s=getState(); if(!s)return;
+    if(tool==="move"){
+      const val=Number(s.externalReserve)||0;
+      content.innerHTML=`<div class="v25-card"><b>Переезд</b><div style="margin:6px 0">Накоплено: <b>${money(val)}</b></div><div class="muted" style="margin-bottom:8px">Это отдельный счёт в банке. Перевод уменьшает основной счёт, но не считается расходом бюджета.</div><input id="moveAmount" type="number" min="1" placeholder="Сумма перевода"><div class="grid" style="margin-top:8px"><button id="moveAdd">Добавить с карты</button><button class="secondary" id="moveBack">Вернуть на карту</button></div></div>`;
+      document.getElementById("moveAdd").onclick=async()=>{const a=Number(document.getElementById("moveAmount").value)||0;if(a<=0||a>s.card)return alert("Проверь сумму и деньги на основном счёте");s.card-=a;s.externalReserve=val+a;s.history.push({note:"Перевод → Переезд",amount:-a,date:new Date().toISOString(),transfer:true});await save();render("move")};
+      document.getElementById("moveBack").onclick=async()=>{const a=Number(document.getElementById("moveAmount").value)||0;if(a<=0||a>val)return alert("Проверь сумму и резерв");s.externalReserve=val-a;s.card+=a;s.history.push({note:"Переезд → Перевод",amount:a,date:new Date().toISOString(),transfer:true});await save();render("move")};
+    } else if(tool==="forecast"){
+      const f=forecast(s);const gt=Math.max(1,Number(s.goalTarget||250000));const left=Math.max(0,gt-(Number(s.savings)||0));
+      content.innerHTML=f?`<div class="v25-card"><b>Прогноз</b><div style="margin-top:6px">Доход в среднем: ${money(f.ai)}</div><div>Расход в среднем: ${money(f.ae)}</div><div>Свободно для накоплений: ${money(f.monthly)}/мес.</div><div style="margin-top:6px">${f.monthly?"До цели примерно "+Math.ceil(left/f.monthly)+" мес.":"При текущих данных накопление не прогнозируется"}</div><div class="muted" style="margin-top:6px">Переводы между счетами не считаются расходами.</div></div>`:'<div class="v25-card"><b>Прогноз</b><div class="muted" style="margin-top:6px">Недостаточно истории доходов и расходов.</div></div>';
+    } else if(tool==="planned"){
+      const list=Array.isArray(s.plannedExpenses)?s.plannedExpenses:[];
+      content.innerHTML=`<div class="v25-card"><div class="row"><b>Запланированные расходы</b><button class="secondary" onclick="openPlannedExpense()">＋ Добавить</button></div>${list.length?list.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(x=>`<div class="caelum-planned-item"><div class="row"><span><b>${esc(x.title||"Расход")}</b><div class="caelum-planned-meta">${esc(x.date)}${x.category?" · "+esc(x.category):""}</div></span><b>${money(x.amount)}</b></div><button class="caelum-planned-delete" onclick="deletePlannedExpenseById(${x.id})">Удалить</button></div>`).join(""): '<div class="muted" style="margin-top:10px">Пока нет запланированных расходов.</div>'}</div>`;
+    } else if(tool==="goal"){
+      const saved=Number(s.savings)||0,gt=Math.max(1,Number(s.goalTarget||250000)),left=Math.max(0,gt-saved),pct=Math.min(100,saved/gt*100);content.innerHTML=`<div class="v25-card"><b>Финансовая цель</b><div style="margin-top:6px">Накоплено: ${money(saved)}</div><div>Цель: ${money(gt)}</div><div>Осталось: ${money(left)}</div><div>Прогресс: ${pct.toFixed(1)}%</div><button class="secondary" style="margin-top:10px" onclick="openGoalEditor()">Изменить цель</button></div>`;
+    } else if(tool==="income"){
+      const a=incomes(s),total=a.reduce((z,x)=>z+Math.abs(Number(x.amount)||0),0);content.innerHTML=`<div class="v25-card"><b>Доходы</b><div style="margin:6px 0">Всего: ${money(total)}</div>${a.length?a.slice().reverse().map(x=>`<div class="v25-row">${new Date(x.date).toLocaleDateString("ru-RU")} · ${money(Math.abs(x.amount))}</div>`).join(""):"Пока нет записей."}</div>`;
+    } else if(tool==="payments"){
+      const a=(s.debts||[]).filter(d=>Number(d.balance)>0&&Number(d.date)>0);content.innerHTML=`<div class="v25-card"><b>Ближайшие платежи</b><div style="margin-top:6px">${a.length?a.map(d=>`${d.name||"Долг"} · ${money(d.payment||0)} · ${d.date} числа`).join("<br>"):"Нет платежей с датой."}</div></div>`;
+    } else {content.innerHTML='<div class="v25-card"><b>Настройки</b><div class="muted" style="margin-top:6px">Название приложения меняется через ⚙️.</div></div>'}
+  }
+  document.querySelectorAll(".caelum-plan-tool").forEach(b=>b.addEventListener("click",()=>render(b.dataset.tool)));
+})();
+</script>
+
+</body>
+</html>
+<style>
+/* v55: stronger unified Caelum action + debt components */
+.caelum-svg-icon{width:21px;height:21px;display:block;fill:none;stroke:currentColor;stroke-width:2.15;stroke-linecap:round;stroke-linejoin:round}
+.caelum-actions-card{padding:17px 16px 16px;border:1.5px solid #e0e5ec;box-shadow:0 10px 26px rgba(28,40,62,.055);background:#fff}
+.caelum-actions-grid{gap:9px;margin-top:12px}
+.caelum-actions-grid button{min-height:112px;padding:12px 6px;border:1.5px solid #e1e6ed;border-radius:22px;background:#f9fafb;color:#536077;gap:9px;font-size:10px;font-weight:650;box-shadow:0 4px 12px rgba(28,40,62,.025)}
+.caelum-actions-grid button:active{transform:scale(.985)}
+.caelum-actions-grid .action-icon{width:42px;height:42px;border-radius:14px;background:#f1efff;color:#5d4cd5;border:1.8px solid #ded8ff;box-sizing:border-box}
+.caelum-actions-grid .action-icon .caelum-svg-icon{width:22px;height:22px;stroke-width:2.2}
+.caelum-debt-card{padding:17px 16px 15px;border:1.5px solid #e0e5ec;box-shadow:0 10px 26px rgba(28,40,62,.055);background:#fff}
+.caelum-debt-card .caelum-row-title{min-height:40px}
+.caelum-debt-icon{width:36px;height:36px;border:1.8px solid #dfe4ec;border-radius:12px;background:#f7f8fa;color:#59657a;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.caelum-debt-icon .caelum-svg-icon{width:20px;height:20px;stroke-width:2.05}
+.caelum-debt-card .caelum-row-title b{font-size:19px}
+.caelum-debt-card #debtTotal{margin-left:auto;font-size:16px;font-weight:750;color:#59657a}
+.caelum-debt-card #homeDebts{margin-top:9px}
+.caelum-debt-card #homeDebts .row{padding:11px 0;border-top:1px solid #edf0f4;font-size:13px}
+.caelum-debt-card #homeDebts .row:first-child{border-top:0}
+@media(max-width:430px){
+ .caelum-actions-grid{gap:7px}
+ .caelum-actions-grid button{min-height:108px;border-radius:20px;font-size:8.8px}
+ .caelum-actions-grid .action-icon{width:39px;height:39px;border-radius:13px}
+ .caelum-actions-grid .action-icon .caelum-svg-icon{width:21px;height:21px}
+ .caelum-debt-card{padding:16px 14px 14px}
+}
+</style>
