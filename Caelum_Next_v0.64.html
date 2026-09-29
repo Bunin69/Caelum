@@ -1036,6 +1036,8 @@ function renderStats(){
       const cat=String(x.category||"").trim()||"Без категории";
       const type=note.startsWith("Доход:")?"income":(note.startsWith("Перевод:")||note.includes("→")||x.transfer?"transfer":"expense");
       const cls=a>0?"positive":(a<0?"negative":"");
+      const spendPercent=Number(x.spendPercent);
+      const percentText=(a<0 && Number.isFinite(spendPercent))?` · ${spendPercent<10?spendPercent.toFixed(1):spendPercent.toFixed(0)}%`:"";
       const icon=typeof categoryHistoryIcon==="function"?categoryHistoryIcon(cat,type):"";
       const d=dateOnly(x.date);
       const dateText=d?d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}).replace(/\./g,"/"):"";
@@ -1046,7 +1048,7 @@ function renderStats(){
           '<div class="history-category">'+esc(cat)+'</div>'+ 
           '<div class="history-date">'+esc(dateText)+'</div>'+ 
         '</div>'+ 
-        '<b class="caelum-history-amount '+cls+'">'+(a>0?"+ ":a<0?"− ":"")+rub(Math.abs(a))+'</b>'+ 
+        '<b class="caelum-history-amount '+cls+'">'+(a>0?"+ ":a<0?"− ":"")+rub(Math.abs(a))+percentText+'</b>'+ 
       '</div>';
     }).join(""):'<div class="muted" style="margin-top:8px">За выбранный период операций нет.</div>';
   }
@@ -1185,6 +1187,8 @@ function pushHistory(entry){
 
 function addExpense(){
  let a=amount();if(a<=0||a>state.card)return alert("Проверь сумму");
+ const balanceBefore=Number(state.card)||0;
+ const spendPercent=balanceBefore>0?(a/balanceBefore)*100:0;
  const select=document.getElementById("opCategory");
  const cat=(select?.value||"").trim()||"Без категории";
  const noteText=note();
@@ -1194,7 +1198,7 @@ function addExpense(){
  state.expenseCategories=state.expenseCategories||{};
  state.expenseCategories[cat]=Number(state.expenseCategories[cat]||0)+a;
  state.history=Array.isArray(state.history)?state.history:[];
- pushHistory({note:"Расход: "+noteText,amount:-a,category:cat,date:isoDateOnly(new Date()),type:"expense"});
+ pushHistory({note:"Расход: "+noteText,amount:-a,category:cat,date:isoDateOnly(new Date()),type:"expense",spendPercent:spendPercent});
  document.getElementById("opAmount").value="";
  document.getElementById("opNote").value="";
  if(select)select.value="";
@@ -1208,11 +1212,12 @@ function addInterest(){let r=Number(document.getElementById("rate").value);if(r>
 function payDebt(i){
   let d=state.debts[i],a=Number(d.payment)||0;
   if(!a||a>state.card||d.balance<=0)return alert("Проверь платёж и деньги на карте");
-  a=Math.min(a,d.balance); const name=d.name; const now=new Date().toISOString();
+  const balanceBefore=Number(state.card)||0;
+  a=Math.min(a,d.balance); const spendPercent=balanceBefore>0?(a/balanceBefore)*100:0; const name=d.name; const now=new Date().toISOString();
   state.card-=a;d.balance-=a;state.expense+=a;state.monthSpent=Number(state.monthSpent||0)+a;
   state.expenseCategories=state.expenseCategories||{};
   state.expenseCategories["Долги"]=Number(state.expenseCategories["Долги"]||0)+a;
-  pushHistory({note:"Платёж: "+name,amount:-a,category:"Долги",date:now});
+  pushHistory({note:"Платёж: "+name,amount:-a,category:"Долги",date:now,spendPercent:spendPercent});
   const closed=d.balance<=0;
   if(closed) state.debts.splice(i,1); save(); if(typeof window.caelumRefreshFinancialControl==="function")window.caelumRefreshFinancialControl(); if(closed)setTimeout(()=>alert("Долг «"+name+"» успешно погашен и удалён из списка долгов!"),50);
 }
